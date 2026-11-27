@@ -1,6 +1,8 @@
 package eu.kanade.presentation.components
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
+import androidx.compose.foundation.border
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -8,6 +10,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.input.TextFieldLineLimits
@@ -46,6 +49,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
@@ -60,6 +64,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import eu.kanade.presentation.theme.kotori.KotoriColors
 import kotlinx.collections.immutable.ImmutableList
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.i18n.stringResource
@@ -69,6 +74,12 @@ import tachiyomi.presentation.core.util.secondaryItemAlpha
 import tachiyomi.presentation.core.util.showSoftKeyboard
 
 const val SEARCH_DEBOUNCE_MILLIS = 250L
+
+
+private fun Modifier.kotoriGlassButton(): Modifier = this
+    .clip(CircleShape)
+    .background(KotoriColors.glassBg, CircleShape)
+    .border(1.dp, KotoriColors.glassBorder, CircleShape)
 
 @Composable
 fun AppBar(
@@ -147,7 +158,7 @@ fun AppBar(
         TopAppBar(
             navigationIcon = {
                 if (isActionMode) {
-                    IconButton(onClick = onCancelActionMode) {
+                    IconButton(modifier = Modifier.kotoriGlassButton(), onClick = onCancelActionMode) {
                         Icon(
                             imageVector = Icons.Outlined.Close,
                             contentDescription = stringResource(MR.strings.action_cancel),
@@ -158,13 +169,13 @@ fun AppBar(
                     Row {
                         // KMK <--
                         navigateUp?.let {
-                            IconButton(onClick = it) {
+                            IconButton(modifier = Modifier.kotoriGlassButton(), onClick = it) {
                                 UpIcon(navigationIcon = navigationIcon)
                             }
                         }
                         // KMK -->
                         goHome?.let {
-                            IconButton(onClick = { it.invoke() }) {
+                            IconButton(modifier = Modifier.kotoriGlassButton(), onClick = { it.invoke() }) {
                                 UpIcon(navigationIcon = Icons.Filled.Home)
                             }
                         }
@@ -175,9 +186,9 @@ fun AppBar(
             title = titleContent,
             actions = actions,
             colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = backgroundColor ?: MaterialTheme.colorScheme.surfaceColorAtElevation(
+                containerColor = (backgroundColor ?: MaterialTheme.colorScheme.surfaceColorAtElevation(
                     elevation = if (isActionMode) 3.dp else 0.dp,
-                ),
+                )).let { it.copy(alpha = it.alpha * 0.82f) },
             ),
             scrollBehavior = scrollBehavior,
         )
@@ -230,6 +241,7 @@ fun AppBarActions(
             focusable = false,
         ) {
             IconButton(
+                modifier = Modifier.kotoriGlassButton(),
                 onClick = it.onClick,
                 enabled = it.enabled,
             ) {
@@ -278,6 +290,7 @@ fun AppBarActions(
             focusable = false,
         ) {
             IconButton(
+                modifier = Modifier.kotoriGlassButton(),
                 onClick = { showMenu = !showMenu },
             ) {
                 Icon(
@@ -462,6 +475,7 @@ fun SearchToolbar(
                         focusable = false,
                     ) {
                         IconButton(
+                            modifier = Modifier.kotoriGlassButton(),
                             onClick = onClick,
                         ) {
                             Icon(
@@ -485,6 +499,7 @@ fun SearchToolbar(
                         focusable = false,
                     ) {
                         IconButton(
+                            modifier = Modifier.kotoriGlassButton(),
                             onClick = {
                                 onClick()
                                 focusRequester.requestFocus()
