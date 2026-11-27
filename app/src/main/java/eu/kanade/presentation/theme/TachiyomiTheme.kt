@@ -20,8 +20,8 @@ import eu.kanade.presentation.theme.colorscheme.CottoncandyColorScheme
 import eu.kanade.presentation.theme.colorscheme.CustomColorScheme
 import eu.kanade.presentation.theme.colorscheme.DoomColorScheme
 import eu.kanade.presentation.theme.colorscheme.GreenAppleColorScheme
-import eu.kanade.presentation.theme.colorscheme.LavenderColorScheme
 import eu.kanade.presentation.theme.colorscheme.KotoriColorScheme
+import eu.kanade.presentation.theme.colorscheme.LavenderColorScheme
 import eu.kanade.presentation.theme.colorscheme.MatrixColorScheme
 import eu.kanade.presentation.theme.colorscheme.MidnightDuskColorScheme
 import eu.kanade.presentation.theme.colorscheme.MochaColorScheme
