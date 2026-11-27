@@ -48,6 +48,7 @@ import eu.kanade.presentation.manga.components.MangaCover
 import eu.kanade.presentation.manga.components.MangaCoverHide
 import eu.kanade.presentation.manga.components.RatioSwitchToPanorama
 import exh.debug.DebugToggles
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
@@ -549,8 +550,8 @@ private fun rememberLatestChapter(manga: Manga): String? {
 
         value = latestChapterSemaphore.withPermit {
             withContext(Dispatchers.IO) {
-                runCatching {
-                    val source = Injekt.get<SourceManager>().get(manga.source) ?: return@runCatching null
+                try {
+                    val source = Injekt.get<SourceManager>().get(manga.source) ?: return@withContext null
                     val chapters = source.getMangaUpdate(
                         manga = manga.toSManga(),
                         chapters = emptyList(),
@@ -569,7 +570,11 @@ private fun rememberLatestChapter(manga: Manga): String? {
                             it.name
                         }
                     }
-                }.getOrNull()
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (_: Exception) {
+                    null
+                }
             }
         }
         latestChapterCache[key] = value ?: ""
