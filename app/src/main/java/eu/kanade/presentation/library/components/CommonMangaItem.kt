@@ -47,6 +47,7 @@ import eu.kanade.domain.manga.model.toSManga
 import eu.kanade.presentation.manga.components.MangaCover
 import eu.kanade.presentation.manga.components.MangaCoverHide
 import eu.kanade.presentation.manga.components.RatioSwitchToPanorama
+import eu.kanade.presentation.theme.kotori.KotoriShapes
 import exh.debug.DebugToggles
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -620,7 +621,7 @@ private fun ContinueReadingButton(
     Box(modifier = modifier) {
         FilledIconButton(
             onClick = onClick,
-            shape = MaterialTheme.shapes.small,
+            shape = KotoriShapes.button,
             colors = IconButtonDefaults.filledIconButtonColors(
                 containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.9f),
                 contentColor = contentColorFor(MaterialTheme.colorScheme.primaryContainer),
