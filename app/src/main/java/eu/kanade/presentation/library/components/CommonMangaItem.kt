@@ -28,6 +28,19 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.MutableFloatState
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.produceState
+import androidx.compose.ui.text.font.FontWeight
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
+import kotlinx.coroutines.withContext
+import java.util.concurrent.ConcurrentHashMap
+import eu.kanade.domain.manga.model.toSManga
+import eu.kanade.tachiyomi.source.model.SChapter
+import tachiyomi.domain.manga.model.Manga
+import tachiyomi.domain.source.service.SourceManager
+import uy.kohesive.injekt.Injekt
+import uy.kohesive.injekt.api.get
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -88,6 +101,7 @@ fun MangaCompactGridItem(
     // KMK -->
     libraryColored: Boolean = true,
     // KMK <--
+    latestChapterManga: Manga? = null,
 ) {
     // KMK -->
     val bgColor = coverData.dominantCoverColors?.first?.let { Color(it) }.takeIf { libraryColored }
@@ -126,7 +140,14 @@ fun MangaCompactGridItem(
                 }
             },
             badgesStart = coverBadgeStart,
-            badgesEnd = coverBadgeEnd,
+            badgesEnd = if (coverBadgeEnd != null || latestChapterManga != null) {
+                {
+                    coverBadgeEnd?.invoke(this)
+                    latestChapterManga?.let { LatestChapterBadge(it) }
+                }
+            } else {
+                null
+            },
             content = {
                 if (title != null) {
                     CoverTextOverlay(
@@ -222,6 +243,7 @@ fun MangaComfortableGridItem(
     usePanoramaCover: Boolean,
     fitToPanoramaCover: Boolean = false,
     // KMK <--
+    latestChapterManga: Manga? = null,
 ) {
     // KMK -->
     val coverIsWide = coverRatio.floatValue <= RatioSwitchToPanorama
@@ -319,6 +341,7 @@ fun MangaComfortableGridItem(
                 minLines = 2,
                 maxLines = titleMaxLines,
             )
+            latestChapterManga?.let { LatestChapterLine(it) }
         }
     }
 }
@@ -440,6 +463,7 @@ fun MangaListItem(
     // KMK -->
     libraryColored: Boolean = true,
     // KMK <--
+    latestChapterManga: Manga? = null,
 ) {
     // KMK -->
     val bgColor = coverData.dominantCoverColors?.first?.let { Color(it) }.takeIf { libraryColored }
@@ -448,7 +472,7 @@ fun MangaListItem(
     Row(
         modifier = Modifier
             .selectedBackground(isSelected)
-            .height(56.dp)
+            .height(if (latestChapterManga != null) 68.dp else 56.dp)
             .combinedClickable(
                 onClick = onClick,
                 onLongClick = onLongClick,
@@ -481,15 +505,19 @@ fun MangaListItem(
                 // KMK <--
             )
         }
-        Text(
-            text = title,
+        Column(
             modifier = Modifier
                 .padding(horizontal = 16.dp)
                 .weight(1f),
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-            style = MaterialTheme.typography.bodyMedium,
-        )
+        ) {
+            Text(
+                text = title,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            latestChapterManga?.let { LatestChapterLine(it) }
+        }
         BadgeGroup(content = badge)
         if (onClickContinueReading != null) {
             ContinueReadingButton(
@@ -499,6 +527,80 @@ fun MangaListItem(
                 modifier = Modifier.padding(start = ContinueReadingButtonListSpacing),
             )
         }
+    }
+}
+
+
+private val latestChapterSemaphore = Semaphore(3)
+private val latestChapterCache = ConcurrentHashMap<String, String>()
+
+@Composable
+private fun rememberLatestChapter(manga: Manga): String? {
+    val key = "${manga.source}:${manga.url}"
+    val latest by produceState(
+        initialValue = latestChapterCache[key]?.takeIf { it.isNotEmpty() },
+        key1 = key,
+    ) {
+        if (latestChapterCache.containsKey(key)) {
+            value = latestChapterCache[key]?.takeIf { it.isNotEmpty() }
+            return@produceState
+        }
+
+        value = latestChapterSemaphore.withPermit {
+            withContext(Dispatchers.IO) {
+                runCatching {
+                    val source = Injekt.get<SourceManager>().get(manga.source) ?: return@runCatching null
+                    val chapters = source.getMangaUpdate(
+                        manga = manga.toSManga(),
+                        chapters = emptyList(),
+                        fetchDetails = false,
+                        fetchChapters = true,
+                    ).chapters
+                    val latestChapter = chapters
+                        .filter { it.chapter_number >= 0f }
+                        .maxByOrNull { it.chapter_number }
+                        ?: chapters.maxByOrNull { it.date_upload }
+
+                    latestChapter?.let {
+                        if (it.chapter_number >= 0f) {
+                            it.chapter_number.toString().removeSuffix(".0")
+                        } else {
+                            it.name
+                        }
+                    }
+                }.getOrNull()
+            }
+        }
+        latestChapterCache[key] = value ?: ""
+    }
+    return latest
+}
+
+@Composable
+private fun LatestChapterLine(manga: Manga) {
+    val latest = rememberLatestChapter(manga)
+    if (latest != null) {
+        Text(
+            text = "Latest: Ch. $latest",
+            modifier = Modifier.padding(start = 4.dp, end = 4.dp, bottom = 4.dp),
+            color = MaterialTheme.colorScheme.tertiary,
+            fontSize = 10.sp,
+            fontWeight = FontWeight.Medium,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
+}
+
+@Composable
+private fun RowScope.LatestChapterBadge(manga: Manga) {
+    val latest = rememberLatestChapter(manga)
+    if (latest != null) {
+        Badge(
+            text = "Ch. $latest",
+            color = MaterialTheme.colorScheme.tertiary,
+            textColor = MaterialTheme.colorScheme.onTertiary,
+        )
     }
 }
 
