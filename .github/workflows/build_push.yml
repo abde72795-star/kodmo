@@ -106,6 +106,29 @@ jobs:
         env:
           BUILD_TOOLS_VERSION: '35.0.1'
 
+      - name: Add Android build-tools to PATH
+        run: |
+          set -euo pipefail
+          sdk_root="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
+          apksigner_path="$(find "$sdk_root/build-tools" -type f -name apksigner -print -quit 2>/dev/null || true)"
+          if [ -z "$apksigner_path" ]; then
+            sdkmanager_path="$(command -v sdkmanager || true)"
+            if [ -z "$sdkmanager_path" ] && [ -x "$sdk_root/cmdline-tools/latest/bin/sdkmanager" ]; then
+              sdkmanager_path="$sdk_root/cmdline-tools/latest/bin/sdkmanager"
+            fi
+            if [ -n "$sdkmanager_path" ]; then
+              yes | "$sdkmanager_path" --licenses >/dev/null || true
+              "$sdkmanager_path" "build-tools;35.0.1"
+              apksigner_path="$(find "$sdk_root/build-tools" -type f -name apksigner -print -quit 2>/dev/null || true)"
+            fi
+          fi
+          if [ -z "$apksigner_path" ]; then
+            echo "::error::Android build-tools apksigner could not be located or installed."
+            exit 1
+          fi
+          echo "$(dirname "$apksigner_path")" >> "$GITHUB_PATH"
+          echo "Using Android APK signer: $apksigner_path"
+
       - name: Verify and rename APK
         id: current_commit
         run: |
