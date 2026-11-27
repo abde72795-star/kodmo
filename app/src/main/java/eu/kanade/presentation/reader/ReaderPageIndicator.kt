@@ -29,7 +29,7 @@ fun ReaderPageIndicator(
 
     val style = TextStyle(
         // KMK -->
-        color = MaterialTheme.colorScheme.primary,
+        color = Color.White,
         // KMK <--
         fontSize = MaterialTheme.typography.bodySmall.fontSize,
         fontWeight = FontWeight.Bold,
