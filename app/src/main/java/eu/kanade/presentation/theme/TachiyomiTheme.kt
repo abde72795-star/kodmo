@@ -67,10 +67,20 @@ fun TachiyomiTheme(
     appTheme: AppTheme? = null,
     amoled: Boolean? = null,
     typography: Typography = MaterialTheme.typography,
+    kotoriBackground: Boolean = true,
     content: @Composable () -> Unit,
 ) {
     if (seedColor == null) {
-        TachiyomiTheme(appTheme, amoled, content)
+        if (kotoriBackground) {
+            TachiyomiTheme(appTheme, amoled, content)
+        } else {
+            val uiPreferences = Injekt.get<UiPreferences>()
+            BaseTachiyomiTheme(
+                appTheme = appTheme ?: uiPreferences.appTheme().get(),
+                isAmoled = amoled ?: uiPreferences.themeDarkAmoled().get(),
+                content = content,
+            )
+        }
     } else {
         val uiPreferences = Injekt.get<UiPreferences>()
         val isAmoled = amoled ?: uiPreferences.themeDarkAmoled().get()
