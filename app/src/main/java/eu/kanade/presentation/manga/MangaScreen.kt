@@ -920,6 +920,7 @@ private fun MangaScreenLargeImpl(
     }
 
     Scaffold(
+        containerColor = Color.Transparent,
         topBar = {
             val selectedChapterCount = remember(chapters) {
                 chapters.count { it.selected }
