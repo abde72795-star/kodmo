@@ -54,9 +54,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
-import java.util.concurrent.ConcurrentHashMap
 import tachiyomi.domain.manga.model.Manga
-import tachiyomi.domain.manga.model.MangaCover as MangaCoverModel
 import tachiyomi.domain.source.service.SourceManager
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.components.Badge
@@ -65,7 +63,8 @@ import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.util.selectedBackground
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
-
+import java.util.concurrent.ConcurrentHashMap
+import tachiyomi.domain.manga.model.MangaCover as MangaCoverModel
 
 object CommonMangaItemDefaults {
     val GridHorizontalSpacer = 4.dp
@@ -532,7 +531,6 @@ fun MangaListItem(
         }
     }
 }
-
 
 private val latestChapterSemaphore = Semaphore(3)
 private val latestChapterCache = ConcurrentHashMap<String, String>()

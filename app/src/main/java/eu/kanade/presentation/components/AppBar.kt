@@ -47,8 +47,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
@@ -74,7 +74,6 @@ import tachiyomi.presentation.core.util.secondaryItemAlpha
 import tachiyomi.presentation.core.util.showSoftKeyboard
 
 const val SEARCH_DEBOUNCE_MILLIS = 250L
-
 
 private fun Modifier.kotoriGlassButton(): Modifier = this
     .clip(CircleShape)
@@ -186,9 +185,11 @@ fun AppBar(
             title = titleContent,
             actions = actions,
             colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = (backgroundColor ?: MaterialTheme.colorScheme.surfaceColorAtElevation(
-                    elevation = if (isActionMode) 3.dp else 0.dp,
-                )).let { it.copy(alpha = it.alpha * 0.82f) },
+                containerColor = (
+                    backgroundColor ?: MaterialTheme.colorScheme.surfaceColorAtElevation(
+                        elevation = if (isActionMode) 3.dp else 0.dp,
+                    )
+                    ).let { it.copy(alpha = it.alpha * 0.82f) },
             ),
             scrollBehavior = scrollBehavior,
         )
