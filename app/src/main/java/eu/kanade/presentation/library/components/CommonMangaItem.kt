@@ -566,7 +566,7 @@ private fun rememberLatestChapter(manga: Manga): String? {
 
                     latestChapter?.let {
                         if (it.chapter_number >= 0f) {
-                            it.chapter_number.toString().removeSuffix(".0")
+                            "Ch. ${it.chapter_number.toString().removeSuffix(".0")}"
                         } else {
                             it.name
                         }
@@ -588,7 +588,7 @@ private fun LatestChapterLine(manga: Manga) {
     val latest = rememberLatestChapter(manga)
     if (latest != null) {
         Text(
-            text = "Latest: Ch. $latest",
+            text = "Latest: $latest",
             modifier = Modifier.padding(start = 4.dp, end = 4.dp, bottom = 4.dp),
             color = MaterialTheme.colorScheme.tertiary,
             fontSize = 10.sp,
@@ -604,7 +604,7 @@ private fun RowScope.LatestChapterBadge(manga: Manga) {
     val latest = rememberLatestChapter(manga)
     if (latest != null) {
         Badge(
-            text = "Ch. $latest",
+            text = latest,
             color = MaterialTheme.colorScheme.tertiary,
             textColor = MaterialTheme.colorScheme.onTertiary,
         )
