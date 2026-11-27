@@ -1,10 +1,7 @@
 package eu.kanade.domain.extension.interactor
 
 import android.content.pm.PackageInfo
-import androidx.core.content.pm.PackageInfoCompat
 import eu.kanade.domain.source.service.SourcePreferences
-import eu.kanade.tachiyomi.util.system.isDebugBuildType
-import mihon.domain.extension.model.KOMIKKU_SIGNATURE
 import mihon.domain.extension.repository.ExtensionStoreRepository
 import tachiyomi.core.common.preference.getAndSet
 
