@@ -6,7 +6,7 @@ package eu.kanade.presentation.theme.kotori
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
@@ -14,6 +14,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
@@ -28,11 +30,10 @@ fun AuroraBackground(
     baseColor: Color = KotoriColors.bgBase,
     content: @Composable () -> Unit,
 ) {
-    val reveal by animateFloatAsState(
-        targetValue = 1f,
-        animationSpec = tween(durationMillis = 650),
-        label = "kodomoAuroraReveal",
-    )
+    val reveal = remember { Animatable(0f) }
+    LaunchedEffect(Unit) {
+        reveal.animateTo(1f, animationSpec = tween(durationMillis = 650))
+    }
     val transition = rememberInfiniteTransition(label = "kodomoAurora")
     val drift1 by transition.animateFloat(
         initialValue = 0f,
@@ -71,7 +72,7 @@ fun AuroraBackground(
                 )
                 drawCircle(
                     brush = Brush.radialGradient(
-                        colors = listOf(accent.start.copy(alpha = 0.30f * reveal), Color.Transparent),
+                        colors = listOf(accent.start.copy(alpha = 0.30f * reveal.value), Color.Transparent),
                         center = center1,
                         radius = radius * scale1,
                     ),
@@ -80,7 +81,7 @@ fun AuroraBackground(
                 )
                 drawCircle(
                     brush = Brush.radialGradient(
-                        colors = listOf(accent.end.copy(alpha = 0.20f * reveal), Color.Transparent),
+                        colors = listOf(accent.end.copy(alpha = 0.20f * reveal.value), Color.Transparent),
                         center = center2,
                         radius = radius * scale2,
                     ),
