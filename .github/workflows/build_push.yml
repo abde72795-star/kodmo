@@ -24,6 +24,11 @@ jobs:
   build:
     name: Build app
     runs-on: 'ubuntu-24.04'
+    env:
+      SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
+      SIGNING_ALIAS: ${{ secrets.ALIAS }}
+      SIGNING_STORE_PASSWORD: ${{ secrets.KEY_STORE_PASSWORD }}
+      SIGNING_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
 
     steps:
       - name: Clone repo
@@ -87,34 +92,45 @@ jobs:
           name: test-report-${{ github.sha }}
           path: app/build/reports/tests/testReleaseUnitTest
 
-      - name: Sign APK
+      # The preview build type already uses Gradle's debug signing config.
+      # Apply the private release-style key only when all repository secrets exist.
+      - name: Sign APK with repository key
+        if: ${{ env.SIGNING_KEY != '' && env.SIGNING_ALIAS != '' && env.SIGNING_STORE_PASSWORD != '' && env.SIGNING_KEY_PASSWORD != '' }}
         uses: r0adkll/sign-android-release@f30bdd30588842ac76044ecdbd4b6d0e3e813478
         with:
           releaseDirectory: app/build/outputs/apk/preview
-          signingKeyBase64: ${{ secrets.SIGNING_KEY }}
-          alias: ${{ secrets.ALIAS }}
-          keyStorePassword: ${{ secrets.KEY_STORE_PASSWORD }}
-          keyPassword: ${{ secrets.KEY_PASSWORD }}
+          signingKeyBase64: ${{ env.SIGNING_KEY }}
+          alias: ${{ env.SIGNING_ALIAS }}
+          keyStorePassword: ${{ env.SIGNING_STORE_PASSWORD }}
+          keyPassword: ${{ env.SIGNING_KEY_PASSWORD }}
         env:
           BUILD_TOOLS_VERSION: '35.0.1'
 
-      - name: Rename apk
+      - name: Verify and rename APK
         id: current_commit
         run: |
-          set -e
-          version_tag=$(echo ${GITHUB_REF/refs\/heads\//} | sed -r 's/^refs\/(heads|tags)\///' | sed -r 's/[-\/]+/_/g')
-          commit_count=$(git rev-list --count HEAD)
-          echo "VERSION_TAG=$version_tag"
-          echo "VERSION_TAG=$version_tag" >> $GITHUB_OUTPUT
-          echo "COMMIT_COUNT=$commit_count"
-          echo "COMMIT_COUNT=$commit_count" >> $GITHUB_OUTPUT
-          apk_path="$(find app/build/outputs/apk/preview -maxdepth 1 -type f -name 'app-arm64-v8a-preview-signed.apk' -print -quit)"
-          if [ -z "$apk_path" ]; then
-            echo "Expected arm64-v8a APK was not produced or signed."
-            ls -lah app/build/outputs/apk/preview
+          set -euo pipefail
+          apk_dir="app/build/outputs/apk/preview"
+          signed_apk="$apk_dir/app-arm64-v8a-preview-signed.apk"
+          gradle_apk="$apk_dir/app-arm64-v8a-preview.apk"
+          if [ -f "$signed_apk" ]; then
+            apk_path="$signed_apk"
+            echo "Using APK signed with the repository's configured signing key."
+          elif [ -f "$gradle_apk" ]; then
+            apk_path="$gradle_apk"
+            echo "::warning::Signing secrets are incomplete. Using the preview APK signed by Gradle's debug key. This fallback is installable, but its signing identity may change between GitHub runners, so it is not suitable for seamless app updates."
+          else
+            echo "::error::No arm64-v8a preview APK was produced."
+            ls -lah "$apk_dir"
             exit 1
           fi
-          mv "$apk_path" Kodomo-arm64-v8a-$version_tag-r$commit_count.apk
+
+          apksigner verify --verbose "$apk_path"
+          version_tag=$(echo "${GITHUB_REF#refs/heads/}" | sed -E 's/^refs\/(heads|tags)\///' | sed -E 's/[-\/]+/_/g')
+          commit_count=$(git rev-list --count HEAD)
+          echo "VERSION_TAG=$version_tag" >> "$GITHUB_OUTPUT"
+          echo "COMMIT_COUNT=$commit_count" >> "$GITHUB_OUTPUT"
+          mv "$apk_path" "Kodomo-arm64-v8a-$version_tag-r$commit_count.apk"
 
       - name: Upload APK
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
