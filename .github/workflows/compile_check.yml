@@ -1,0 +1,57 @@
+name: Compile check
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'app/**'
+      - 'i18n-kmk/**'
+      - 'domain/**'
+      - 'data/**'
+      - '.github/workflows/compile_check.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  compile:
+    name: Compile and report errors as annotations
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Clone repo
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up JDK
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+        with:
+          java-version-file: .github/.java-version
+          distribution: temurin
+
+      - name: Set up gradle
+        uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6
+
+      - name: Compile Kotlin
+        id: compile
+        run: |
+          set +e
+          ./gradlew :app:compilePreviewKotlin --console=plain --stacktrace > build.log 2>&1
+          echo "exit=$?" >> "$GITHUB_OUTPUT"
+          tail -n 5 build.log
+          exit 0
+
+      - name: Publish compiler errors as annotations
+        if: steps.compile.outputs.exit != '0'
+        run: |
+          set +e
+          {
+            grep -E '^e: |error:|FAILED|What went wrong|Execution failed' build.log | head -n 60
+            grep -A6 'What went wrong' build.log | head -n 12
+          } | sed 's#file://##; s#/home/runner/work/[^/]*/[^/]*/##' > errors.txt
+          msg="$(sed ':a;N;$!ba;s/%/%25/g;s/\r/%0D/g;s/\n/%0A/g' errors.txt | cut -c1-6000)"
+          echo "::error title=Compile errors::${msg}"
+          exit 1
