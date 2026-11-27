@@ -4,6 +4,7 @@
 package eu.kanade.presentation.theme.kotori
 
 import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
@@ -27,6 +28,11 @@ fun AuroraBackground(
     baseColor: Color = KotoriColors.bgBase,
     content: @Composable () -> Unit,
 ) {
+    val reveal by animateFloatAsState(
+        targetValue = 1f,
+        animationSpec = tween(durationMillis = 650),
+        label = "kodomoAuroraReveal",
+    )
     val transition = rememberInfiniteTransition(label = "kodomoAurora")
     val drift1 by transition.animateFloat(
         initialValue = 0f,
@@ -65,7 +71,7 @@ fun AuroraBackground(
                 )
                 drawCircle(
                     brush = Brush.radialGradient(
-                        colors = listOf(accent.start.copy(alpha = 0.30f), Color.Transparent),
+                        colors = listOf(accent.start.copy(alpha = 0.30f * reveal), Color.Transparent),
                         center = center1,
                         radius = radius * scale1,
                     ),
@@ -74,7 +80,7 @@ fun AuroraBackground(
                 )
                 drawCircle(
                     brush = Brush.radialGradient(
-                        colors = listOf(accent.end.copy(alpha = 0.20f), Color.Transparent),
+                        colors = listOf(accent.end.copy(alpha = 0.20f * reveal), Color.Transparent),
                         center = center2,
                         radius = radius * scale2,
                     ),
