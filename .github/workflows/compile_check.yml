@@ -35,23 +35,26 @@ jobs:
       - name: Set up gradle
         uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6
 
-      - name: Compile Kotlin
-        id: compile
+      - name: Format, compile and unit tests
         run: |
           set +e
+          annotate() {
+            # $1 = title, $2 = log file
+            {
+              grep -E '^e: |error:|FAILED|What went wrong|Execution failed|Violations|^\s+\+|^\s+-|\.kt' "$2" | head -n 70
+              grep -A8 'What went wrong' "$2" | head -n 14
+            } | sed 's#file://##; s#/home/runner/work/[^/]*/[^/]*/##' > errors.txt
+            msg="$(sed ':a;N;$!ba;s/%/%25/g;s/\r/%0D/g;s/\n/%0A/g' errors.txt | cut -c1-6000)"
+            echo "::error title=$1::${msg}"
+          }
+          failed=0
+          ./gradlew spotlessCheck --console=plain > spotless.log 2>&1
+          if [ $? -ne 0 ]; then annotate "spotlessCheck failed" spotless.log; failed=1; fi
           ./gradlew :app:compilePreviewKotlin --console=plain --stacktrace > build.log 2>&1
-          echo "exit=$?" >> "$GITHUB_OUTPUT"
-          tail -n 5 build.log
-          exit 0
-
-      - name: Publish compiler errors as annotations
-        if: steps.compile.outputs.exit != '0'
-        run: |
-          set +e
-          {
-            grep -E '^e: |error:|FAILED|What went wrong|Execution failed' build.log | head -n 60
-            grep -A6 'What went wrong' build.log | head -n 12
-          } | sed 's#file://##; s#/home/runner/work/[^/]*/[^/]*/##' > errors.txt
-          msg="$(sed ':a;N;$!ba;s/%/%25/g;s/\r/%0D/g;s/\n/%0A/g' errors.txt | cut -c1-6000)"
-          echo "::error title=Compile errors::${msg}"
-          exit 1
+          if [ $? -ne 0 ]; then annotate "Kotlin compile failed" build.log; failed=1; fi
+          if [ $failed -eq 0 ]; then
+            ./gradlew :app:testReleaseUnitTest --tests 'eu.kanade.tachiyomi.ui.reader.translate.*' --console=plain > test.log 2>&1
+            if [ $? -ne 0 ]; then annotate "Translation unit tests failed" test.log; failed=1; fi
+          fi
+          tail -n 3 test.log 2>/dev/null
+          exit $failed

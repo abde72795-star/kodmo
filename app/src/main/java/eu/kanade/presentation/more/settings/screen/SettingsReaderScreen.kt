@@ -1,9 +1,13 @@
 package eu.kanade.presentation.more.settings.screen
 
+import android.text.format.Formatter
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import eu.kanade.presentation.more.settings.Preference
 import eu.kanade.tachiyomi.ui.reader.setting.ReaderBottomButton
@@ -12,11 +16,20 @@ import eu.kanade.tachiyomi.ui.reader.setting.ReaderPreferences
 import eu.kanade.tachiyomi.ui.reader.setting.ReaderPreferences.Companion.zoomWideImagesAllowedList
 import eu.kanade.tachiyomi.ui.reader.setting.ReaderPreferences.WebtoonScaleType
 import eu.kanade.tachiyomi.ui.reader.setting.ReadingMode
+import eu.kanade.tachiyomi.ui.reader.translate.PageTranslationService
+import eu.kanade.tachiyomi.ui.reader.translate.TextColorMode
+import eu.kanade.tachiyomi.ui.reader.translate.TranslationLanguages
+import eu.kanade.tachiyomi.ui.reader.translate.TranslationPreferences
+import eu.kanade.tachiyomi.ui.reader.translate.TranslationProviderId
 import eu.kanade.tachiyomi.ui.reader.viewer.pager.PagerConfig
 import eu.kanade.tachiyomi.util.system.hasDisplayCutout
+import eu.kanade.tachiyomi.util.system.toast
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentMapOf
+import kotlinx.collections.immutable.toImmutableList
 import kotlinx.collections.immutable.toImmutableMap
+import kotlinx.coroutines.launch
+import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.kmk.KMR
 import tachiyomi.i18n.sy.SYMR
@@ -114,6 +127,9 @@ object SettingsReaderScreen : SearchableSettings {
             getPageDownloadingGroup(readerPreferences = readerPref),
             getForkSettingsGroup(readerPreferences = readerPref),
             // SY <--
+            // KMK -->
+            getPageTranslationGroup(),
+            // KMK <--
         )
     }
 
@@ -675,4 +691,112 @@ object SettingsReaderScreen : SearchableSettings {
         )
     }
     // SY <--
+
+    // KMK -->
+    @Composable
+    private fun getPageTranslationGroup(): Preference.PreferenceGroup {
+        val prefs = remember { Injekt.get<TranslationPreferences>() }
+        val context = LocalContext.current
+        val scope = rememberCoroutineScope()
+        val providerId = TranslationProviderId.fromId(prefs.provider().collectAsState().value)
+        val enabled by prefs.enabled().collectAsState()
+        val cacheBytes by produceState(0L, enabled) {
+            value = withIOContext { PageTranslationService.cache.sizeBytes() }
+        }
+        val auto = stringResource(KMR.strings.pref_page_translation_auto)
+        val languages = (listOf(TranslationLanguages.AUTO to auto) + TranslationLanguages.all).toMap().toImmutableMap()
+        val targets = TranslationLanguages.all.toMap().toImmutableMap()
+
+        val items = mutableListOf<Preference.PreferenceItem<out Any, out Any>>(
+            Preference.PreferenceItem.SwitchPreference(
+                preference = prefs.enabled(),
+                title = stringResource(KMR.strings.pref_page_translation_enabled),
+                subtitle = stringResource(KMR.strings.pref_page_translation_enabled_summary),
+            ),
+            Preference.PreferenceItem.InfoPreference(
+                title = stringResource(KMR.strings.pref_page_translation_ocr) + ": " +
+                    stringResource(KMR.strings.pref_page_translation_ocr_summary),
+            ),
+            Preference.PreferenceItem.ListPreference(
+                preference = prefs.sourceLanguage(),
+                entries = languages,
+                title = stringResource(KMR.strings.pref_page_translation_source),
+            ),
+            Preference.PreferenceItem.ListPreference(
+                preference = prefs.targetLanguage(),
+                entries = targets,
+                title = stringResource(KMR.strings.pref_page_translation_target),
+            ),
+            Preference.PreferenceItem.ListPreference(
+                preference = prefs.provider(),
+                entries = TranslationProviderId.entries.associate { it.id to it.label }.toImmutableMap(),
+                title = stringResource(KMR.strings.pref_page_translation_provider),
+            ),
+            Preference.PreferenceItem.EditTextPreference(
+                preference = prefs.apiKey(providerId),
+                title = stringResource(KMR.strings.pref_page_translation_api_key),
+                subtitle = stringResource(KMR.strings.pref_page_translation_api_key_summary),
+            ),
+        )
+        if (providerId != TranslationProviderId.DEEPL) {
+            items += Preference.PreferenceItem.EditTextPreference(
+                preference = prefs.baseUrl(providerId),
+                title = stringResource(KMR.strings.pref_page_translation_base_url),
+            )
+            items += Preference.PreferenceItem.EditTextPreference(
+                preference = prefs.model(providerId),
+                title = stringResource(KMR.strings.pref_page_translation_model),
+            )
+        }
+        items += Preference.PreferenceItem.ListPreference(
+            preference = prefs.fontScale(),
+            entries = persistentMapOf(
+                0.8f to "80%",
+                0.9f to "90%",
+                1f to "100%",
+                1.1f to "110%",
+                1.25f to "125%",
+            ),
+            title = stringResource(KMR.strings.pref_page_translation_font_scale),
+        )
+        items += Preference.PreferenceItem.ListPreference(
+            preference = prefs.textColorMode(),
+            entries = persistentMapOf(
+                TextColorMode.AUTO.id to stringResource(KMR.strings.page_translation_color_auto),
+                TextColorMode.BLACK.id to stringResource(KMR.strings.page_translation_color_black),
+                TextColorMode.WHITE.id to stringResource(KMR.strings.page_translation_color_white),
+            ),
+            title = stringResource(KMR.strings.pref_page_translation_text_color),
+        )
+        items += Preference.PreferenceItem.ListPreference(
+            preference = prefs.cacheMaxMb(),
+            entries = persistentMapOf(
+                64 to "64 MB",
+                128 to "128 MB",
+                256 to "256 MB",
+                512 to "512 MB",
+                1024 to "1 GB",
+            ),
+            title = stringResource(KMR.strings.pref_page_translation_cache_size),
+        )
+        val cleared = stringResource(KMR.strings.page_translation_cache_cleared)
+        items += Preference.PreferenceItem.TextPreference(
+            title = stringResource(KMR.strings.pref_page_translation_clear_cache),
+            subtitle = stringResource(
+                KMR.strings.pref_page_translation_cache_used,
+                Formatter.formatFileSize(context, cacheBytes),
+            ),
+            onClick = {
+                scope.launch {
+                    withIOContext { PageTranslationService.cache.clear() }
+                    context.toast(cleared)
+                }
+            },
+        )
+        return Preference.PreferenceGroup(
+            title = stringResource(KMR.strings.pref_category_page_translation),
+            preferenceItems = items.toImmutableList(),
+        )
+    }
+    // KMK <--
 }

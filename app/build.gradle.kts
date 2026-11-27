@@ -262,6 +262,14 @@ dependencies {
 
     // Disk
     implementation(libs.disklrucache)
+
+    // KMK -->
+    // Page translation: on-device OCR (models bundled in the APK, arm64-v8a only)
+    implementation(libs.mlkit.text.latin)
+    implementation(libs.mlkit.text.chinese)
+    implementation(libs.mlkit.text.japanese)
+    implementation(libs.mlkit.text.korean)
+    // KMK <--
     implementation(libs.unifile)
 
     // Preferences
