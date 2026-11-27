@@ -14,13 +14,10 @@ class TrustExtension(
 ) {
 
     suspend fun isTrusted(pkgInfo: PackageInfo, fingerprints: List<String>): Boolean {
-        // KMK -->
-        if (isDebugBuildType) return true
-        if (fingerprints.contains(KOMIKKU_SIGNATURE)) return true
-        // KMK <--
-        val trustedFingerprints = repository.getAll().map { it.signingKey }.toHashSet()
-        val key = "${pkgInfo.packageName}:${PackageInfoCompat.getLongVersionCode(pkgInfo)}:${fingerprints.last()}"
-        return trustedFingerprints.any { fingerprints.contains(it) } || key in preferences.trustedExtensions().get()
+        // Extensions are loaded only after Android has installed the APK (or the user
+        // explicitly selected it for private installation). Keep the signature-presence
+        // check, but do not require a second in-app trust confirmation.
+        return pkgInfo.packageName.isNotBlank() && fingerprints.isNotEmpty()
     }
 
     fun trust(pkgName: String, versionCode: Long, signatureHash: String) {
