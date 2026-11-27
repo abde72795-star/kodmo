@@ -34,6 +34,7 @@ import eu.kanade.presentation.manga.components.MangaCover.Companion.COVER_TEMPLA
 import eu.kanade.presentation.manga.components.MangaCover.Companion.COVER_TEMPLATE_SIZE_MEDIUM
 import eu.kanade.presentation.manga.components.MangaCover.Companion.COVER_TEMPLATE_SIZE_NORMAL
 import eu.kanade.presentation.manga.components.MangaCover.Size
+import eu.kanade.presentation.theme.kotori.KotoriShapes
 import eu.kanade.tachiyomi.R
 import tachiyomi.domain.manga.model.Manga
 import tachiyomi.domain.manga.model.asMangaCover
@@ -59,7 +60,7 @@ enum class MangaCover(val ratio: Float) {
         data: Any?,
         modifier: Modifier = Modifier,
         contentDescription: String = "",
-        shape: Shape = MaterialTheme.shapes.extraSmall,
+        shape: Shape = KotoriShapes.cover,
         onClick: (() -> Unit)? = null,
         // KMK -->
         alpha: Float = 1f,
