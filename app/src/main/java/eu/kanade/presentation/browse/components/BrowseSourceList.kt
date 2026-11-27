@@ -95,6 +95,7 @@ internal fun BrowseSourceListItem(
         ),
         // KMK -->
         isSelected = isSelected,
+        latestChapterManga = manga,
         // KMK <--
         coverAlpha = if (manga.favorite) CommonMangaItemDefaults.BrowseFavoriteCoverAlpha else 1f,
         badge = {
