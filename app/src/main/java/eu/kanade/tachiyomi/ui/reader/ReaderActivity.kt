@@ -321,6 +321,7 @@ class ReaderActivity : BaseActivity() {
             typography = MaterialTheme.typography.copy(
                 bodyLarge = MaterialTheme.typography.bodySmall,
             ),
+            kotoriBackground = false,
         ) {
             val context = LocalContext.current
             // KMK <--
