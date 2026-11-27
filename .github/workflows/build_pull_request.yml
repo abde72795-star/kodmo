@@ -21,7 +21,7 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build:
@@ -65,6 +65,22 @@ jobs:
 
       - name: Set up gradle
         uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6
+
+      - name: Apply Kotlin code formatting
+        run: ./gradlew spotlessApply
+
+      - name: Commit formatting fixes
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/src/main/java
+          if git diff --cached --quiet; then
+            echo "No formatting changes to commit"
+          else
+            git commit -m "style: apply Spotless formatting"
+            git push origin "HEAD:${GITHUB_REF_NAME}"
+          fi
 
       - name: Check code format
         run: ./gradlew spotlessCheck
