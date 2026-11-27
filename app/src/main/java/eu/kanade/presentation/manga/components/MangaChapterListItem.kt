@@ -145,7 +145,7 @@ fun MangaChapterListItem(
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         onTextLayout = { textHeight = it.size.height },
-                        color = LocalContentColor.current.copy(alpha = if (read) DISABLED_ALPHA else 1f),
+                        color = Color.White.copy(alpha = if (read) DISABLED_ALPHA else 1f),
                     )
                 }
 
