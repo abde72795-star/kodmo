@@ -301,6 +301,19 @@ internal object ExtensionLoader {
         }
 
         val signatures = getSignatures(pkgInfo)
+        // Trust extensions that were already installed before this app was first installed.
+        // Extensions installed after the app remain subject to the normal signature trust prompt.
+        val appFirstInstallTime = runCatching {
+            pkgManager.getPackageInfo(context.packageName, 0).firstInstallTime
+        }.getOrDefault(Long.MAX_VALUE)
+        if (
+            extensionInfo.isShared &&
+            pkgInfo.firstInstallTime > 0L &&
+            pkgInfo.firstInstallTime <= appFirstInstallTime &&
+            !signatures.isNullOrEmpty()
+        ) {
+            trustExtension.trust(pkgName, versionCode, signatures.last())
+        }
         if (signatures.isNullOrEmpty()) {
             logcat(LogPriority.WARN) { "Package $pkgName isn't signed" }
             return LoadResult.Error
