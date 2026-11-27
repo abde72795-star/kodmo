@@ -26,7 +26,9 @@ import androidx.compose.material3.contentColorFor
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.MutableFloatState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -37,18 +39,32 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import eu.kanade.domain.manga.model.toSManga
 import eu.kanade.presentation.manga.components.MangaCover
 import eu.kanade.presentation.manga.components.MangaCoverHide
 import eu.kanade.presentation.manga.components.RatioSwitchToPanorama
+import eu.kanade.presentation.theme.kotori.KotoriShapes
 import exh.debug.DebugToggles
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
+import kotlinx.coroutines.withContext
+import tachiyomi.domain.manga.model.Manga
+import tachiyomi.domain.source.service.SourceManager
 import tachiyomi.i18n.MR
+import tachiyomi.presentation.core.components.Badge
 import tachiyomi.presentation.core.components.BadgeGroup
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.util.selectedBackground
+import uy.kohesive.injekt.Injekt
+import uy.kohesive.injekt.api.get
+import java.util.concurrent.ConcurrentHashMap
 import tachiyomi.domain.manga.model.MangaCover as MangaCoverModel
 
 object CommonMangaItemDefaults {
@@ -88,6 +104,7 @@ fun MangaCompactGridItem(
     // KMK -->
     libraryColored: Boolean = true,
     // KMK <--
+    latestChapterManga: Manga? = null,
 ) {
     // KMK -->
     val bgColor = coverData.dominantCoverColors?.first?.let { Color(it) }.takeIf { libraryColored }
@@ -126,7 +143,14 @@ fun MangaCompactGridItem(
                 }
             },
             badgesStart = coverBadgeStart,
-            badgesEnd = coverBadgeEnd,
+            badgesEnd = if (coverBadgeEnd != null || latestChapterManga != null) {
+                {
+                    coverBadgeEnd?.invoke(this)
+                    latestChapterManga?.let { LatestChapterBadge(it) }
+                }
+            } else {
+                null
+            },
             content = {
                 if (title != null) {
                     CoverTextOverlay(
@@ -222,6 +246,7 @@ fun MangaComfortableGridItem(
     usePanoramaCover: Boolean,
     fitToPanoramaCover: Boolean = false,
     // KMK <--
+    latestChapterManga: Manga? = null,
 ) {
     // KMK -->
     val coverIsWide = coverRatio.floatValue <= RatioSwitchToPanorama
@@ -319,6 +344,7 @@ fun MangaComfortableGridItem(
                 minLines = 2,
                 maxLines = titleMaxLines,
             )
+            latestChapterManga?.let { LatestChapterLine(it) }
         }
     }
 }
@@ -440,6 +466,7 @@ fun MangaListItem(
     // KMK -->
     libraryColored: Boolean = true,
     // KMK <--
+    latestChapterManga: Manga? = null,
 ) {
     // KMK -->
     val bgColor = coverData.dominantCoverColors?.first?.let { Color(it) }.takeIf { libraryColored }
@@ -448,7 +475,7 @@ fun MangaListItem(
     Row(
         modifier = Modifier
             .selectedBackground(isSelected)
-            .height(56.dp)
+            .height(if (latestChapterManga != null) 68.dp else 56.dp)
             .combinedClickable(
                 onClick = onClick,
                 onLongClick = onLongClick,
@@ -481,15 +508,19 @@ fun MangaListItem(
                 // KMK <--
             )
         }
-        Text(
-            text = title,
+        Column(
             modifier = Modifier
                 .padding(horizontal = 16.dp)
                 .weight(1f),
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-            style = MaterialTheme.typography.bodyMedium,
-        )
+        ) {
+            Text(
+                text = title,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            latestChapterManga?.let { LatestChapterLine(it) }
+        }
         BadgeGroup(content = badge)
         if (onClickContinueReading != null) {
             ContinueReadingButton(
@@ -499,6 +530,83 @@ fun MangaListItem(
                 modifier = Modifier.padding(start = ContinueReadingButtonListSpacing),
             )
         }
+    }
+}
+
+private val latestChapterSemaphore = Semaphore(3)
+private val latestChapterCache = ConcurrentHashMap<String, String>()
+
+@Composable
+private fun rememberLatestChapter(manga: Manga): String? {
+    val key = "${manga.source}:${manga.url}"
+    val latest by produceState(
+        initialValue = latestChapterCache[key]?.takeIf { it.isNotEmpty() },
+        key1 = key,
+    ) {
+        if (latestChapterCache.containsKey(key)) {
+            value = latestChapterCache[key]?.takeIf { it.isNotEmpty() }
+            return@produceState
+        }
+
+        value = latestChapterSemaphore.withPermit {
+            withContext(Dispatchers.IO) {
+                try {
+                    val source = Injekt.get<SourceManager>().get(manga.source) ?: return@withContext null
+                    val chapters = source.getMangaUpdate(
+                        manga = manga.toSManga(),
+                        chapters = emptyList(),
+                        fetchDetails = false,
+                        fetchChapters = true,
+                    ).chapters
+                    val latestChapter = chapters
+                        .filter { it.chapter_number >= 0f }
+                        .maxByOrNull { it.chapter_number }
+                        ?: chapters.maxByOrNull { it.date_upload }
+
+                    latestChapter?.let {
+                        if (it.chapter_number >= 0f) {
+                            "Ch. ${it.chapter_number.toString().removeSuffix(".0")}"
+                        } else {
+                            it.name
+                        }
+                    }
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (_: Exception) {
+                    null
+                }
+            }
+        }
+        latestChapterCache[key] = value ?: ""
+    }
+    return latest
+}
+
+@Composable
+private fun LatestChapterLine(manga: Manga) {
+    val latest = rememberLatestChapter(manga)
+    if (latest != null) {
+        Text(
+            text = "Latest: $latest",
+            modifier = Modifier.padding(start = 4.dp, end = 4.dp, bottom = 4.dp),
+            color = MaterialTheme.colorScheme.tertiary,
+            fontSize = 10.sp,
+            fontWeight = FontWeight.Medium,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
+}
+
+@Composable
+private fun RowScope.LatestChapterBadge(manga: Manga) {
+    val latest = rememberLatestChapter(manga)
+    if (latest != null) {
+        Badge(
+            text = latest,
+            color = MaterialTheme.colorScheme.tertiary,
+            textColor = MaterialTheme.colorScheme.onTertiary,
+        )
     }
 }
 
@@ -512,7 +620,7 @@ private fun ContinueReadingButton(
     Box(modifier = modifier) {
         FilledIconButton(
             onClick = onClick,
-            shape = MaterialTheme.shapes.small,
+            shape = KotoriShapes.button,
             colors = IconButtonDefaults.filledIconButtonColors(
                 containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.9f),
                 contentColor = contentColorFor(MaterialTheme.colorScheme.primaryContainer),

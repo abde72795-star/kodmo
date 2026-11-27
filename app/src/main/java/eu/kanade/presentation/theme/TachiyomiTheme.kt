@@ -20,6 +20,7 @@ import eu.kanade.presentation.theme.colorscheme.CottoncandyColorScheme
 import eu.kanade.presentation.theme.colorscheme.CustomColorScheme
 import eu.kanade.presentation.theme.colorscheme.DoomColorScheme
 import eu.kanade.presentation.theme.colorscheme.GreenAppleColorScheme
+import eu.kanade.presentation.theme.colorscheme.KotoriColorScheme
 import eu.kanade.presentation.theme.colorscheme.LavenderColorScheme
 import eu.kanade.presentation.theme.colorscheme.MatrixColorScheme
 import eu.kanade.presentation.theme.colorscheme.MidnightDuskColorScheme
@@ -35,6 +36,8 @@ import eu.kanade.presentation.theme.colorscheme.TealTurqoiseColorScheme
 import eu.kanade.presentation.theme.colorscheme.TidalWaveColorScheme
 import eu.kanade.presentation.theme.colorscheme.YinYangColorScheme
 import eu.kanade.presentation.theme.colorscheme.YotsubaColorScheme
+import eu.kanade.presentation.theme.kotori.AuroraBackground
+import eu.kanade.presentation.theme.kotori.KotoriLibraryAccent
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
@@ -48,7 +51,11 @@ fun TachiyomiTheme(
     BaseTachiyomiTheme(
         appTheme = appTheme ?: uiPreferences.appTheme().get(),
         isAmoled = amoled ?: uiPreferences.themeDarkAmoled().get(),
-        content = content,
+        content = {
+            AuroraBackground(accent = KotoriLibraryAccent) {
+                content()
+            }
+        },
     )
 }
 
@@ -60,10 +67,20 @@ fun TachiyomiTheme(
     appTheme: AppTheme? = null,
     amoled: Boolean? = null,
     typography: Typography = MaterialTheme.typography,
+    kotoriBackground: Boolean = true,
     content: @Composable () -> Unit,
 ) {
     if (seedColor == null) {
-        TachiyomiTheme(appTheme, amoled, content)
+        if (kotoriBackground) {
+            TachiyomiTheme(appTheme, amoled, content)
+        } else {
+            val uiPreferences = Injekt.get<UiPreferences>()
+            BaseTachiyomiTheme(
+                appTheme = appTheme ?: uiPreferences.appTheme().get(),
+                isAmoled = amoled ?: uiPreferences.themeDarkAmoled().get(),
+                content = content,
+            )
+        }
     } else {
         val uiPreferences = Injekt.get<UiPreferences>()
         val isAmoled = amoled ?: uiPreferences.themeDarkAmoled().get()
@@ -138,7 +155,7 @@ private fun getThemeColorScheme(
 }
 
 private val colorSchemes: Map<AppTheme, BaseColorScheme> = mapOf(
-    AppTheme.DEFAULT to TachiyomiColorScheme,
+    AppTheme.DEFAULT to KotoriColorScheme,
     AppTheme.CATPPUCCIN to CatppuccinColorScheme,
     AppTheme.GREEN_APPLE to GreenAppleColorScheme,
     AppTheme.LAVENDER to LavenderColorScheme,

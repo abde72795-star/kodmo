@@ -147,7 +147,7 @@ fun MangaInfoBox(
         // Backdrop
         val backdropGradientColors = listOf(
             Color.Transparent,
-            MaterialTheme.colorScheme.background,
+            MaterialTheme.colorScheme.surface.copy(alpha = 0.46f),
         )
         AsyncImage(
             model = ImageRequest.Builder(LocalContext.current)
@@ -176,11 +176,10 @@ fun MangaInfoBox(
                     )
                 }
                 // KMK -->
-                .background(MaterialTheme.colorScheme.surfaceTint.copy(alpha = 0.4f))
-                .blur(7.dp)
-                // .blur(4.dp)
+                .background(MaterialTheme.colorScheme.surfaceTint.copy(alpha = 0.32f))
+                .blur(22.dp)
                 // KMK <--
-                .alpha(0.2f),
+                .alpha(0.34f),
         )
 
         // Manga & source info
@@ -967,7 +966,10 @@ private fun MangaSummary(
             },
             {
                 // scrim
-                val colors = listOf(Color.Transparent, MaterialTheme.colorScheme.background)
+                val colors = listOf(
+                    Color.Transparent,
+                    MaterialTheme.colorScheme.surface.copy(alpha = 0.38f),
+                )
                 Box(
                     modifier = Modifier.background(Brush.verticalGradient(colors = colors)),
                     contentAlignment = Alignment.Center,

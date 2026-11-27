@@ -60,6 +60,7 @@ fun GlobalSearchCardRow(
                 onLongClick = { onLongClick(title) },
                 // KMK -->
                 isSelected = selection.fastAny { selected -> selected.id == title.id },
+                latestChapterManga = title,
                 // KMK <--
             )
         }
@@ -76,6 +77,7 @@ internal fun MangaItem(
     // KMK -->
     isSelected: Boolean = false,
     usePanoramaCover: Boolean? = null,
+    latestChapterManga: Manga? = null,
     // KMK <--
 ) {
     // KMK -->
@@ -101,6 +103,7 @@ internal fun MangaItem(
             coverRatio = coverRatio,
             usePanoramaCover = panoramaCover,
             fitToPanoramaCover = true,
+            latestChapterManga = latestChapterManga,
             // KMK <--
             coverAlpha = if (isFavorite) CommonMangaItemDefaults.BrowseFavoriteCoverAlpha else 1f,
             onClick = onClick,

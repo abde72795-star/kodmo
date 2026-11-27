@@ -105,6 +105,7 @@ object HomeScreen : Screen() {
             // Provide usable navigator to content screen
             CompositionLocalProvider(LocalNavigator provides navigator) {
                 Scaffold(
+                    containerColor = androidx.compose.ui.graphics.Color.Transparent,
                     startBar = {
                         if (isTabletUi()) {
                             NavigationRail {

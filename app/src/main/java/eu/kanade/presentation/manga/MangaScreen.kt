@@ -47,6 +47,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -454,6 +455,7 @@ private fun MangaScreenSmallImpl(
     }
 
     Scaffold(
+        containerColor = Color.Transparent,
         topBar = {
             val selectedChapterCount: Int = remember(chapters) {
                 chapters.count { it.selected }
@@ -702,7 +704,7 @@ private fun MangaScreenSmallImpl(
                     ) {
                         if (expandRelatedMangas) {
                             if (state.relatedMangasSorted?.isNotEmpty() != false) {
-                                item { HorizontalDivider() }
+                                item { HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.07f)) }
                                 item(
                                     key = MangaScreenItem.RELATED_MANGAS,
                                     contentType = MangaScreenItem.RELATED_MANGAS,
@@ -724,7 +726,7 @@ private fun MangaScreenSmallImpl(
                                         )
                                     }
                                 }
-                                item { HorizontalDivider() }
+                                item { HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.07f)) }
                             }
                         } else if (!showRelatedMangasInOverflow) {
                             item(
@@ -918,6 +920,7 @@ private fun MangaScreenLargeImpl(
     }
 
     Scaffold(
+        containerColor = Color.Transparent,
         topBar = {
             val selectedChapterCount = remember(chapters) {
                 chapters.count { it.selected }
@@ -1187,7 +1190,7 @@ private fun MangaScreenLargeImpl(
                                                 )
                                             }
                                         }
-                                        item { HorizontalDivider() }
+                                        item { HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.07f)) }
                                     }
                                 } else if (!showRelatedMangasInOverflow) {
                                     item(

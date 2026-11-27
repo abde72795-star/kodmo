@@ -302,6 +302,7 @@ class MainActivity : BaseActivity() {
 
                 val scaffoldInsets = WindowInsets.navigationBars.only(WindowInsetsSides.Horizontal)
                 Scaffold(
+                    containerColor = androidx.compose.ui.graphics.Color.Transparent,
                     topBar = {
                         AppStateBanners(
                             downloadedOnlyMode = downloadOnly,

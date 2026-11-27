@@ -102,6 +102,7 @@ internal fun BrowseSourceCompactGridItem(
         ),
         // KMK -->
         isSelected = isSelected,
+        latestChapterManga = manga,
         // KMK <--
         coverAlpha = if (manga.favorite) CommonMangaItemDefaults.BrowseFavoriteCoverAlpha else 1f,
         coverBadgeStart = {

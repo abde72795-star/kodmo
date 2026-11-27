@@ -58,6 +58,8 @@ import eu.kanade.presentation.manga.components.ScanlatorFilterDialog
 import eu.kanade.presentation.manga.components.SetIntervalDialog
 import eu.kanade.presentation.more.settings.screen.SettingsEhScreen
 import eu.kanade.presentation.theme.TachiyomiTheme
+import eu.kanade.presentation.theme.kotori.AuroraBackground
+import eu.kanade.presentation.theme.kotori.KotoriMangaAccent
 import eu.kanade.presentation.util.AssistContentScreen
 import eu.kanade.presentation.util.Screen
 import eu.kanade.presentation.util.isTabletUi
@@ -209,7 +211,9 @@ class MangaScreen(
         TachiyomiTheme(
             seedColor = seedColor.takeIf { screenModel.themeCoverBased },
         ) {
-            content()
+            AuroraBackground(accent = KotoriMangaAccent) {
+                content()
+            }
         }
 
         BulkFavoriteDialogs(

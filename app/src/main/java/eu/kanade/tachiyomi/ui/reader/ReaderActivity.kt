@@ -317,10 +317,11 @@ class ReaderActivity : BaseActivity() {
     private fun ReaderActivityBinding.setComposeOverlay(): Unit = composeOverlay.setComposeContent {
         // KMK -->
         TachiyomiTheme(
-            seedColor = seedColorState().takeIf { themeCoverBased },
+            seedColor = null,
             typography = MaterialTheme.typography.copy(
                 bodyLarge = MaterialTheme.typography.bodySmall,
             ),
+            kotoriBackground = false,
         ) {
             val context = LocalContext.current
             // KMK <--
