@@ -46,6 +46,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
@@ -454,6 +455,7 @@ private fun MangaScreenSmallImpl(
     }
 
     Scaffold(
+        containerColor = Color.Transparent,
         topBar = {
             val selectedChapterCount: Int = remember(chapters) {
                 chapters.count { it.selected }
