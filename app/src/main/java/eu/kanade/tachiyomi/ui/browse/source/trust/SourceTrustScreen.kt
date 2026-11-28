@@ -68,23 +68,38 @@ class SourceTrustScreen : Screen() {
                         DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
                             DropdownMenuItem(
                                 text = { Text(stringResource(KMR.strings.source_trust_select_10)) },
-                                onClick = { menuOpen = false; screenModel.selectFirst(10) },
+                                onClick = {
+                                    menuOpen = false
+                                    screenModel.selectFirst(10)
+                                },
                             )
                             DropdownMenuItem(
                                 text = { Text(stringResource(KMR.strings.source_trust_select_30)) },
-                                onClick = { menuOpen = false; screenModel.selectFirst(30) },
+                                onClick = {
+                                    menuOpen = false
+                                    screenModel.selectFirst(30)
+                                },
                             )
                             DropdownMenuItem(
                                 text = { Text(stringResource(KMR.strings.source_trust_select_all)) },
-                                onClick = { menuOpen = false; screenModel.selectAll() },
+                                onClick = {
+                                    menuOpen = false
+                                    screenModel.selectAll()
+                                },
                             )
                             DropdownMenuItem(
                                 text = { Text(stringResource(KMR.strings.source_trust_clear_selection)) },
-                                onClick = { menuOpen = false; screenModel.clearSelection() },
+                                onClick = {
+                                    menuOpen = false
+                                    screenModel.clearSelection()
+                                },
                             )
                             DropdownMenuItem(
                                 text = { Text(stringResource(KMR.strings.source_trust_reset)) },
-                                onClick = { menuOpen = false; screenModel.resetToDefaults() },
+                                onClick = {
+                                    menuOpen = false
+                                    screenModel.resetToDefaults()
+                                },
                             )
                         }
                     },
