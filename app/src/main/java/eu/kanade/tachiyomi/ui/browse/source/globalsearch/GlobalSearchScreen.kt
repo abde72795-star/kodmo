@@ -116,6 +116,8 @@ class GlobalSearchScreen(
                 onToggleGrouped = screenModel::toggleGrouped,
                 onGroupSortChange = screenModel::setGroupSort,
                 onRefreshChapters = { screenModel.fetchLastChapters(force = true) },
+                onToggleRelevant = screenModel::toggleRelevantOnly,
+                onRetryFailed = screenModel::retryFailed,
                 // KMK <--
             )
         }

@@ -103,6 +103,8 @@ class SourcePreferences(
 
     fun showBrowseChapterCount() = preferenceStore.getBoolean("browse_chapter_count", true)
 
+    fun globalSearchRelevantOnly() = preferenceStore.getBoolean("global_search_relevant_only", true)
+
     fun globalSearchGrouped() = preferenceStore.getBoolean("global_search_grouped", true)
 
     fun globalSearchGroupSort() = preferenceStore.getEnum("global_search_group_sort", GroupSort.Title)

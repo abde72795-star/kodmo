@@ -111,6 +111,9 @@ internal fun BrowseSourceComfortableGridItem(
         coverAlpha = if (manga.favorite) CommonMangaItemDefaults.BrowseFavoriteCoverAlpha else 1f,
         coverBadgeStart = {
             InLibraryBadge(enabled = manga.favorite)
+            // KMK -->
+            ChapterCountBadge(manga)
+            // KMK <--
         },
         // SY -->
         coverBadgeEnd = {

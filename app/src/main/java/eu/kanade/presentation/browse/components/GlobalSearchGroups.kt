@@ -25,6 +25,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import eu.kanade.presentation.manga.components.MangaCover
+import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.ui.browse.source.globalsearch.group.GroupEntry
 import eu.kanade.tachiyomi.ui.browse.source.globalsearch.group.GroupSort
 import eu.kanade.tachiyomi.ui.browse.source.globalsearch.group.LastChapter
@@ -49,6 +50,10 @@ fun GlobalSearchGroupToolbar(
     onToggleGrouped: () -> Unit,
     onSortChange: (GroupSort) -> Unit,
     onRefresh: () -> Unit,
+    relevantOnly: Boolean,
+    onToggleRelevant: () -> Unit,
+    failedSources: List<Source>,
+    onRetryFailed: () -> Unit,
 ) {
     val entries by LastChapterTracker.entries.collectAsState()
     val lastUpdated = entries.values.maxOfOrNull { it.fetchedAt }
@@ -73,12 +78,34 @@ fun GlobalSearchGroupToolbar(
                     onClick = { onSortChange(GroupSort.LatestChapter) },
                     label = { Text(stringResource(KMR.strings.kmk_sort_latest_chapter)) },
                 )
+                FilterChip(
+                    selected = relevantOnly,
+                    onClick = onToggleRelevant,
+                    label = { Text(stringResource(KMR.strings.kmk_only_relevant)) },
+                )
                 IconButton(onClick = onRefresh) {
                     Icon(
                         imageVector = Icons.Outlined.Refresh,
                         contentDescription = stringResource(KMR.strings.kmk_refresh_chapters),
                     )
                 }
+            }
+        }
+        if (failedSources.isNotEmpty()) {
+            Row(
+                modifier = Modifier.clickable(onClick = onRetryFailed),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = stringResource(
+                        KMR.strings.kmk_failed_sources,
+                        failedSources.size,
+                        failedSources.joinToString { it.name },
+                    ),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.weight(1f),
+                )
             }
         }
         if (grouped && lastUpdated != null) {
@@ -166,13 +193,15 @@ private fun chapterText(entry: LastChapterEntry?): String {
     val chapter: LastChapter? = entry?.chapter
     return when {
         entry == null -> stringResource(KMR.strings.kmk_latest_chapter_loading)
-        chapter == null -> stringResource(KMR.strings.kmk_latest_chapter_unknown)
+        chapter == null && entry.count == null -> stringResource(KMR.strings.kmk_latest_chapter_unknown)
         else -> {
-            val text = if (chapter.number != null) {
-                stringResource(KMR.strings.kmk_latest_chapter, chapter.label)
-            } else {
-                chapter.label
+            val latest = when {
+                chapter == null -> null
+                chapter.number != null -> stringResource(KMR.strings.kmk_latest_chapter, chapter.label)
+                else -> chapter.label
             }
+            val count = entry.count?.let { stringResource(KMR.strings.kmk_chapter_count, it) }
+            val text = listOfNotNull(count, latest).joinToString(" · ")
             if (entry.failed) stringResource(KMR.strings.kmk_latest_chapter_stale, text) else text
         }
     }

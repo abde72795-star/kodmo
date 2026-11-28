@@ -94,6 +94,11 @@ abstract class SearchScreenModel(
             }
         }
         screenModelScope.launch {
+            preferences.globalSearchRelevantOnly().changes().collectLatest { value ->
+                mutableState.update { it.copy(relevantOnly = value) }
+            }
+        }
+        screenModelScope.launch {
             preferences.globalSearchGroupSort().changes().collectLatest { sort ->
                 mutableState.update { it.copy(groupSort = sort) }
             }
@@ -104,6 +109,36 @@ abstract class SearchScreenModel(
     // KMK -->
     private val requestedChapterKeys = HashSet<String>()
     private val chapterScope get() = ioCoroutineScope
+
+    fun toggleRelevantOnly() {
+        preferences.globalSearchRelevantOnly().toggle()
+    }
+
+    /** Re-runs the search only for sources that failed, keeping every successful result. */
+    fun retryFailed() {
+        val query = lastQuery ?: return
+        val failed = state.value.items.filter { it.value is SearchItemResult.Error }.keys.toList()
+        if (failed.isEmpty()) return
+        failed.forEach { updateItem(it, SearchItemResult.Loading) }
+        ioCoroutineScope.launch {
+            failed.map { source ->
+                async {
+                    try {
+                        val page = withContext(coroutineDispatcher) {
+                            source.getSearchManga(1, query.sanitize(), source.getFilterList())
+                        }
+                        val titles = page.mangas
+                            .map { it.toDomainManga(source.id) }
+                            .distinctBy { it.url }
+                            .let { networkToLocalManga(it) }
+                        if (isActive) updateItem(source, SearchItemResult.Success(titles))
+                    } catch (e: Exception) {
+                        if (isActive) updateItem(source, SearchItemResult.Error(e))
+                    }
+                }
+            }.awaitAll()
+        }
+    }
 
     fun toggleGrouped() {
         preferences.globalSearchGrouped().toggle()
@@ -116,7 +151,10 @@ abstract class SearchScreenModel(
     /** Fetches the latest chapter of every grouped entry, a few at a time. Failing sources are skipped. */
     fun fetchLastChapters(force: Boolean = false) {
         if (!state.value.grouped) return
-        val groups = SearchGrouping.group(state.value.items)
+        val groups = SearchGrouping.group(
+            state.value.items,
+            state.value.searchedQuery.takeIf { state.value.relevantOnly },
+        )
         for (entry in groups.flatMap { it.entries }) {
             val key = LastChapterTracker.key(entry.source.id, entry.manga.url)
             if (force) {
@@ -207,6 +245,9 @@ abstract class SearchScreenModel(
 
         this.lastQuery = query
         this.lastSourceFilter = sourceFilter
+        // KMK -->
+        mutableState.update { it.copy(searchedQuery = query) }
+        // KMK <--
 
         searchJob?.cancel()
         // KMK -->
@@ -304,6 +345,8 @@ abstract class SearchScreenModel(
         val dialog: Dialog? = null,
         // KMK -->
         val grouped: Boolean = true,
+        val relevantOnly: Boolean = true,
+        val searchedQuery: String? = null,
         val groupSort: GroupSort = GroupSort.Title,
         // KMK <--
     ) {

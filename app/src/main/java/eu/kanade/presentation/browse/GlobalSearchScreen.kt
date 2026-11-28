@@ -49,6 +49,8 @@ fun GlobalSearchScreen(
     onToggleGrouped: () -> Unit,
     onGroupSortChange: (GroupSort) -> Unit,
     onRefreshChapters: () -> Unit,
+    onToggleRelevant: () -> Unit,
+    onRetryFailed: () -> Unit,
     // KMK <--
 ) {
     // KMK -->
@@ -109,11 +111,18 @@ fun GlobalSearchScreen(
                 onToggleGrouped = onToggleGrouped,
                 onSortChange = onGroupSortChange,
                 onRefresh = onRefreshChapters,
+                relevantOnly = state.relevantOnly,
+                onToggleRelevant = onToggleRelevant,
+                failedSources = state.items.filter { it.value is SearchItemResult.Error }.keys.toList(),
+                onRetryFailed = onRetryFailed,
             )
             val bottomPadding = PaddingValues(bottom = paddingValues.calculateBottomPadding())
             if (state.grouped) {
                 GlobalSearchGroupedList(
-                    groups = SearchGrouping.group(state.filteredItems),
+                    groups = SearchGrouping.group(
+                        state.filteredItems,
+                        state.searchedQuery.takeIf { state.relevantOnly },
+                    ),
                     sort = state.groupSort,
                     contentPadding = bottomPadding,
                     onClickItem = onClickItem,

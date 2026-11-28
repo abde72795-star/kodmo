@@ -22,6 +22,8 @@ import java.util.concurrent.ConcurrentHashMap
 /** Cached latest-chapter result for one title on one source. */
 data class LastChapterEntry(
     val chapter: LastChapter?,
+    /** Total chapters the source lists for this title, null if never fetched successfully. */
+    val count: Int?,
     val fetchedAt: Long,
     val failed: Boolean,
 )
@@ -85,12 +87,12 @@ object LastChapterTracker {
         val result = try {
             val update = source.getMangaUpdate(manga.toSManga(), emptyList(), false, true)
             val items = update.chapters.map { LastChapterResolver.Item(it.name, it.chapter_number) }
-            LastChapterEntry(LastChapterResolver.resolve(manga.title, items), now, failed = false)
+            LastChapterEntry(LastChapterResolver.resolve(manga.title, items), items.size, now, failed = false)
         } catch (e: CancellationException) {
             throw e
         } catch (e: Throwable) {
-            val previous = _entries.value[key]?.chapter
-            LastChapterEntry(previous, now, failed = true)
+            val previous = _entries.value[key]
+            LastChapterEntry(previous?.chapter, previous?.count, now, failed = true)
         }
         _entries.update { current ->
             val next = current + (key to result)
@@ -104,7 +106,7 @@ object LastChapterTracker {
     }
 
     // region disk cache
-    private fun file() = File(Injekt.get<Application>().cacheDir, "last_chapters.tsv")
+    private fun file() = File(Injekt.get<Application>().cacheDir, "last_chapters_v2.tsv")
 
     @Synchronized
     private fun ensureLoaded() {
@@ -115,11 +117,11 @@ object LastChapterTracker {
             if (!f.exists()) return@runCatching
             val map = HashMap<String, LastChapterEntry>()
             f.forEachLine { line ->
-                val p = line.split('\t', limit = 5)
-                if (p.size < 5) return@forEachLine
+                val p = line.split('\t', limit = 6)
+                if (p.size < 6) return@forEachLine
                 val number = p[3].toFloatOrNull()
-                val chapter = if (p[4].isEmpty()) null else LastChapter(number, p[4])
-                map[p[0]] = LastChapterEntry(chapter, p[1].toLongOrNull() ?: 0L, p[2] == "1")
+                val chapter = if (p[5].isEmpty()) null else LastChapter(number, p[5])
+                map[p[0]] = LastChapterEntry(chapter, p[4].toIntOrNull(), p[1].toLongOrNull() ?: 0L, p[2] == "1")
             }
             _entries.update { map + it }
         }
@@ -130,7 +132,7 @@ object LastChapterTracker {
         runCatching {
             val text = _entries.value.entries.joinToString("\n") { (k, v) ->
                 val label = v.chapter?.label.orEmpty().replace('\t', ' ').replace('\n', ' ')
-                "${k.replace('\t', ' ').replace('\n', ' ')}\t${v.fetchedAt}\t${if (v.failed) 1 else 0}\t${v.chapter?.number ?: ""}\t$label"
+                "${k.replace('\t', ' ').replace('\n', ' ')}\t${v.fetchedAt}\t${if (v.failed) 1 else 0}\t${v.chapter?.number ?: ""}\t${v.count ?: ""}\t$label"
             }
             file().writeText(text)
         }

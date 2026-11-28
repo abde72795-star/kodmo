@@ -257,6 +257,11 @@
     <string name="kmk_latest_chapter_loading">Checking…</string>
     <string name="kmk_latest_chapter_stale">%1$s (outdated)</string>
     <string name="kmk_chapters_updated_at">Chapters updated %1$s</string>
+    <string name="kmk_only_relevant">Only matching titles</string>
+    <string name="kmk_chapter_count">%1$d chapters</string>
+    <string name="kmk_failed_sources">%1$d sources failed (tap to retry): %2$s</string>
+    <string name="pref_browse_chapter_count">Show chapter count on browse cards</string>
+    <string name="pref_browse_chapter_count_summary">Uses chapters already saved, otherwise asks the source (3 at a time, only for visible cards, cached for hours). Unknown counts are hidden</string>
     <string name="kmk_sources_count">%1$d sources</string>
 
     <!-- Source trust -->
