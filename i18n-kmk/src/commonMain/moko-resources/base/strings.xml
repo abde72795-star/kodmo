@@ -276,6 +276,10 @@
     <string name="source_trust_reset">Restore defaults (trust all)</string>
     <string name="source_trust_trust_selected">Trust selected</string>
     <string name="source_trust_untrust_selected">Untrust selected</string>
+    <string name="source_trust_extensions_action">Trust all installed extensions</string>
+    <string name="source_trust_extensions_message">%1$d installed extensions are marked untrusted in this app (it keeps its own trust list, separate from Komikku). Trusting them lets this app load their code. Only continue if you installed them yourself from a repository you trust.\n\n%2$s</string>
+    <string name="source_trust_extensions_confirm">Trust</string>
+    <string name="source_trust_extensions_cancel">Cancel</string>
     <string name="source_trust_state_trusted">Trusted</string>
     <string name="source_trust_state_untrusted">Untrusted</string>
     <string name="source_trust_exclude">Exclude from bulk actions</string>

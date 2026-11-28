@@ -113,7 +113,6 @@ class GlobalSearchScreen(
                 // KMK -->
                 bulkFavoriteScreenModel = bulkFavoriteScreenModel,
                 hasPinnedSources = screenModel.hasPinnedSources(),
-                onToggleGrouped = screenModel::toggleGrouped,
                 onGroupSortChange = screenModel::setGroupSort,
                 onRefreshChapters = { screenModel.fetchLastChapters(force = true) },
                 onToggleRelevant = screenModel::toggleRelevantOnly,

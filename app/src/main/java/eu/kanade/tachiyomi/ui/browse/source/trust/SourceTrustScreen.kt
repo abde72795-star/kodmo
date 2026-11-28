@@ -12,6 +12,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.LockOpen
 import androidx.compose.material.icons.outlined.MoreVert
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
@@ -22,6 +23,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -95,6 +97,13 @@ class SourceTrustScreen : Screen() {
                                 },
                             )
                             DropdownMenuItem(
+                                text = { Text(stringResource(KMR.strings.source_trust_extensions_action)) },
+                                onClick = {
+                                    menuOpen = false
+                                    screenModel.setTrustExtensionsDialog(true)
+                                },
+                            )
+                            DropdownMenuItem(
                                 text = { Text(stringResource(KMR.strings.source_trust_reset)) },
                                 onClick = {
                                     menuOpen = false
@@ -109,6 +118,35 @@ class SourceTrustScreen : Screen() {
             if (state.loading) {
                 LoadingScreen(Modifier.padding(contentPadding))
                 return@Scaffold
+            }
+            if (state.showTrustExtensionsDialog) {
+                AlertDialog(
+                    onDismissRequest = { screenModel.setTrustExtensionsDialog(false) },
+                    title = { Text(stringResource(KMR.strings.source_trust_extensions_action)) },
+                    text = {
+                        Text(
+                            stringResource(
+                                KMR.strings.source_trust_extensions_message,
+                                state.untrustedExtensions,
+                                state.untrustedNames.take(8).joinToString(),
+                            ),
+                        )
+                    },
+                    confirmButton = {
+                        TextButton(
+                            onClick = {
+                                screenModel.trustAllInstalledExtensions()
+                                screenModel.setTrustExtensionsDialog(false)
+                            },
+                            enabled = state.untrustedExtensions > 0,
+                        ) { Text(stringResource(KMR.strings.source_trust_extensions_confirm)) }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { screenModel.setTrustExtensionsDialog(false) }) {
+                            Text(stringResource(KMR.strings.source_trust_extensions_cancel))
+                        }
+                    },
+                )
             }
             Column(modifier = Modifier.padding(contentPadding)) {
                 Text(

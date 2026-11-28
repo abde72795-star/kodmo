@@ -89,11 +89,6 @@ abstract class SearchScreenModel(
             }
         }
         screenModelScope.launch {
-            preferences.globalSearchGrouped().changes().collectLatest { grouped ->
-                mutableState.update { it.copy(grouped = grouped) }
-            }
-        }
-        screenModelScope.launch {
             preferences.globalSearchRelevantOnly().changes().collectLatest { value ->
                 mutableState.update { it.copy(relevantOnly = value) }
             }
@@ -138,10 +133,6 @@ abstract class SearchScreenModel(
                 }
             }.awaitAll()
         }
-    }
-
-    fun toggleGrouped() {
-        preferences.globalSearchGrouped().toggle()
     }
 
     fun setGroupSort(sort: GroupSort) {

@@ -47,7 +47,6 @@ import java.util.Date
 fun GlobalSearchGroupToolbar(
     grouped: Boolean,
     sort: GroupSort,
-    onToggleGrouped: () -> Unit,
     onSortChange: (GroupSort) -> Unit,
     onRefresh: () -> Unit,
     relevantOnly: Boolean,
@@ -62,11 +61,6 @@ fun GlobalSearchGroupToolbar(
             horizontalArrangement = Arrangement.spacedBy(MaterialTheme.padding.small),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            FilterChip(
-                selected = grouped,
-                onClick = onToggleGrouped,
-                label = { Text(stringResource(KMR.strings.kmk_group_results)) },
-            )
             if (grouped) {
                 FilterChip(
                     selected = sort == GroupSort.Title,

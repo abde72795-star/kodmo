@@ -38,6 +38,11 @@ class SourceTrustScreenModel(
             }
         }
         screenModelScope.launch {
+            extensionManager.untrustedExtensionsFlow.collect { value ->
+                mutableState.update { it.copy(untrustedExtensions = value.size, untrustedNames = value.map { e -> e.name }) }
+            }
+        }
+        screenModelScope.launch {
             preferences.trustBulkExcluded().changes().collect { value ->
                 mutableState.update { it.copy(excluded = value) }
             }
@@ -85,6 +90,15 @@ class SourceTrustScreenModel(
         preferences.untrustedSources().set(SourceTrust.untrust(s.untrusted, s.selection))
     }
 
+    /** Adds every installed-but-untrusted extension to the app's trusted list (explicit user action). */
+    fun trustAllInstalledExtensions() {
+        screenModelScope.launch {
+            extensionManager.untrustedExtensionsFlow.value.forEach { extensionManager.trust(it) }
+        }
+    }
+
+    fun setTrustExtensionsDialog(show: Boolean) = mutableState.update { it.copy(showTrustExtensionsDialog = show) }
+
     fun resetToDefaults() {
         preferences.untrustedSources().set(emptySet())
         preferences.trustBulkExcluded().set(emptySet())
@@ -102,6 +116,9 @@ class SourceTrustScreenModel(
         val selection: Set<Long> = emptySet(),
         val untrusted: Set<String> = emptySet(),
         val excluded: Set<String> = emptySet(),
+        val untrustedExtensions: Int = 0,
+        val untrustedNames: List<String> = emptyList(),
+        val showTrustExtensionsDialog: Boolean = false,
     ) {
         val filtered: List<Row> = query?.trim()?.takeIf { it.isNotEmpty() }?.let { q ->
             rows.filter {

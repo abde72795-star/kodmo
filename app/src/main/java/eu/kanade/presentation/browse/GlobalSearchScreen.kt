@@ -46,7 +46,6 @@ fun GlobalSearchScreen(
     // KMK -->
     bulkFavoriteScreenModel: BulkFavoriteScreenModel,
     hasPinnedSources: Boolean,
-    onToggleGrouped: () -> Unit,
     onGroupSortChange: (GroupSort) -> Unit,
     onRefreshChapters: () -> Unit,
     onToggleRelevant: () -> Unit,
@@ -108,7 +107,6 @@ fun GlobalSearchScreen(
             GlobalSearchGroupToolbar(
                 grouped = state.grouped,
                 sort = state.groupSort,
-                onToggleGrouped = onToggleGrouped,
                 onSortChange = onGroupSortChange,
                 onRefresh = onRefreshChapters,
                 relevantOnly = state.relevantOnly,
