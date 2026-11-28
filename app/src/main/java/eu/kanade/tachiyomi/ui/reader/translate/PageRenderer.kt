@@ -126,7 +126,7 @@ object PageRenderer {
         canvas.translate(inner.left.toFloat(), top.toFloat())
         // Thin outline in the opposite colour keeps the text readable when the fill is imperfect.
         val outline = Paint(paint).apply {
-            style = Paint.Style.STROKE
+            this.style = Paint.Style.STROKE
             strokeWidth = max(1f, paint.textSize / 9f)
             this.color = if (color == Color.BLACK) Color.WHITE else Color.BLACK
         }
