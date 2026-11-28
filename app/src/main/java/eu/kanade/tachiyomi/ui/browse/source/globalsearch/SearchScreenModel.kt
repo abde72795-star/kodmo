@@ -12,6 +12,7 @@ import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.ui.browse.source.globalsearch.group.GroupSort
 import eu.kanade.tachiyomi.ui.browse.source.globalsearch.group.LastChapterTracker
 import eu.kanade.tachiyomi.ui.browse.source.globalsearch.group.SearchGrouping
+import eu.kanade.tachiyomi.ui.browse.source.trust.SourceTrust
 import kotlinx.collections.immutable.PersistentMap
 import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.toImmutableMap
@@ -53,6 +54,10 @@ abstract class SearchScreenModel(
     private val enabledLanguages = sourcePreferences.enabledLanguages().get()
     private val disabledSources = sourcePreferences.disabledSources().get()
     protected val pinnedSources = sourcePreferences.pinnedSources().get()
+
+    // KMK -->
+    private val untrustedSources = sourcePreferences.untrustedSources().get()
+    // KMK <--
 
     private var lastQuery: String? = null
     private var lastSourceFilter: SourceFilter? = null
@@ -140,6 +145,9 @@ abstract class SearchScreenModel(
     open fun getEnabledSources(): List<Source> {
         return sourceManager.getVisibleSources()
             .filter { it.lang in enabledLanguages && "${it.id}" !in disabledSources }
+            // KMK -->
+            .filter { SourceTrust.isTrusted(it.id, untrustedSources) }
+            // KMK <--
             .sortedWith(
                 compareBy(
                     { "${it.id}" !in pinnedSources },

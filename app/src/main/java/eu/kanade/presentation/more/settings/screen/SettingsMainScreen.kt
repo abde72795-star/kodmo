@@ -19,6 +19,7 @@ import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Security
 import androidx.compose.material.icons.outlined.Storage
+import androidx.compose.material.icons.outlined.VerifiedUser
 import androidx.compose.material.icons.outlined.Sync
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
@@ -45,6 +46,7 @@ import eu.kanade.presentation.more.settings.screen.about.AboutScreen
 import eu.kanade.presentation.more.settings.widget.TextPreferenceWidget
 import eu.kanade.presentation.util.LocalBackPress
 import eu.kanade.presentation.util.Screen
+import eu.kanade.tachiyomi.ui.browse.source.trust.SourceTrustScreen
 import exh.assets.EhAssets
 import exh.assets.ehassets.EhLogo
 import exh.assets.ehassets.MangadexLogo
@@ -227,6 +229,14 @@ object SettingsMainScreen : Screen() {
             icon = Icons.Outlined.Explore,
             screen = SettingsBrowseScreen,
         ),
+        // KMK -->
+        Item(
+            titleRes = KMR.strings.source_trust_title,
+            subtitleRes = KMR.strings.source_trust_summary,
+            icon = Icons.Outlined.VerifiedUser,
+            screen = SourceTrustScreen(),
+        ),
+        // KMK <--
         Item(
             titleRes = MR.strings.label_data_storage,
             subtitleRes = MR.strings.pref_backup_summary,

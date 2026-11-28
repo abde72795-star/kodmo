@@ -97,6 +97,12 @@ class SourcePreferences(
 
     fun disabledRepos() = preferenceStore.getStringSet("disabled_repos", emptySet())
 
+    fun untrustedSources() = preferenceStore.getStringSet("source_trust_untrusted", emptySet())
+
+    fun trustBulkExcluded() = preferenceStore.getStringSet("source_trust_bulk_excluded", emptySet())
+
+    fun showBrowseChapterCount() = preferenceStore.getBoolean("browse_chapter_count", true)
+
     fun globalSearchGrouped() = preferenceStore.getBoolean("global_search_grouped", true)
 
     fun globalSearchGroupSort() = preferenceStore.getEnum("global_search_group_sort", GroupSort.Title)

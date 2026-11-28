@@ -258,4 +258,20 @@
     <string name="kmk_latest_chapter_stale">%1$s (outdated)</string>
     <string name="kmk_chapters_updated_at">Chapters updated %1$s</string>
     <string name="kmk_sources_count">%1$d sources</string>
+
+    <!-- Source trust -->
+    <string name="source_trust_title">Source trust</string>
+    <string name="source_trust_summary">Choose which sources the app may use for search and checks</string>
+    <string name="source_trust_note">Trusted sources may be used for global search, latest-chapter checks and chapter counts. This does not change extension security checks. The lock button protects a source from bulk actions.</string>
+    <string name="source_trust_counts">%1$d of %2$d trusted · %3$d selected</string>
+    <string name="source_trust_select_10">Select 10</string>
+    <string name="source_trust_select_30">Select 30</string>
+    <string name="source_trust_select_all">Select all</string>
+    <string name="source_trust_clear_selection">Clear selection</string>
+    <string name="source_trust_reset">Restore defaults (trust all)</string>
+    <string name="source_trust_trust_selected">Trust selected</string>
+    <string name="source_trust_untrust_selected">Untrust selected</string>
+    <string name="source_trust_state_trusted">Trusted</string>
+    <string name="source_trust_state_untrusted">Untrusted</string>
+    <string name="source_trust_exclude">Exclude from bulk actions</string>
 </resources>
