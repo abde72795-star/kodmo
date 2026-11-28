@@ -15,6 +15,8 @@ import eu.kanade.presentation.util.formattedMessage
 import eu.kanade.tachiyomi.databinding.ReaderErrorBinding
 import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.ui.reader.model.ReaderPage
+import eu.kanade.tachiyomi.ui.reader.translate.PageTranslationService
+import eu.kanade.tachiyomi.ui.reader.translate.TranslationPreferences
 import eu.kanade.tachiyomi.ui.reader.viewer.ReaderPageImageView
 import eu.kanade.tachiyomi.ui.reader.viewer.ReaderProgressIndicator
 import eu.kanade.tachiyomi.ui.webview.WebViewActivity
@@ -22,6 +24,7 @@ import eu.kanade.tachiyomi.util.system.dpToPx
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.supervisorScope
 import logcat.LogPriority
@@ -34,6 +37,7 @@ import tachiyomi.core.common.util.lang.withUIContext
 import tachiyomi.core.common.util.system.ImageUtil
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.i18n.MR
+import uy.kohesive.injekt.injectLazy
 
 /**
  * Holder of the webtoon reader for a single page of a chapter.
@@ -84,6 +88,13 @@ class WebtoonPageHolder(
      */
     private var loadJob: Job? = null
 
+    // KMK -->
+    private val translationPreferences: TranslationPreferences by injectLazy()
+
+    /** Re-renders the page when page translation is switched on or off. */
+    private var translationToggleJob: Job? = null
+    // KMK <--
+
     init {
         refreshLayoutParams()
 
@@ -99,6 +110,14 @@ class WebtoonPageHolder(
         this.page = page
         loadJob?.cancel()
         loadJob = scope.launch { loadPageAndProcessStatus() }
+        // KMK -->
+        translationToggleJob?.cancel()
+        translationToggleJob = scope.launch {
+            translationPreferences.enabled().changes().drop(1).collect {
+                if (page.status == Page.State.Ready) setImage()
+            }
+        }
+        // KMK <--
         refreshLayoutParams()
     }
 
@@ -120,6 +139,10 @@ class WebtoonPageHolder(
     override fun recycle() {
         loadJob?.cancel()
         loadJob = null
+        // KMK -->
+        translationToggleJob?.cancel()
+        translationToggleJob = null
+        // KMK <--
 
         removeErrorLayout()
         frame.recycle()
@@ -197,7 +220,14 @@ class WebtoonPageHolder(
             val (source, isAnimated) = withIOContext {
                 val source = streamFn().use { process(Buffer().readFrom(it)) }
                 val isAnimated = ImageUtil.isAnimatedAndSupported(source)
-                Pair(source, isAnimated)
+                // KMK -->
+                val shownSource = if (!isAnimated && translationPreferences.enabled().get()) {
+                    PageTranslationService.translate(source) ?: source
+                } else {
+                    source
+                }
+                Pair(shownSource, isAnimated)
+                // KMK <--
             }
             withUIContext {
                 frame.setImage(

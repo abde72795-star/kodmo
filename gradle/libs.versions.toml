@@ -33,6 +33,10 @@ quickjs-android = { group = "com.github.zhanghai.quickjs-java", name = "quickjs-
 
 jsoup = "org.jsoup:jsoup:1.23.2"
 
+mlkit-text-latin = "com.google.mlkit:text-recognition:16.0.1"
+mlkit-text-chinese = "com.google.mlkit:text-recognition-chinese:16.0.1"
+mlkit-text-japanese = "com.google.mlkit:text-recognition-japanese:16.0.1"
+mlkit-text-korean = "com.google.mlkit:text-recognition-korean:16.0.1"
 disklrucache = "com.jakewharton:disklrucache:2.0.2"
 unifile = "com.github.komikku-app:UniFile:084a54140a"
 libarchive = "me.zhanghai.android.libarchive:library:1.1.6"

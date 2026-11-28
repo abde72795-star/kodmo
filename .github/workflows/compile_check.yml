@@ -2,7 +2,7 @@ name: Compile check
 on:
   push:
     branches:
-      - exp/multi-source
+      - exp/ai-tools
     paths:
       - 'app/**'
       - 'i18n-kmk/**'
@@ -55,7 +55,7 @@ jobs:
           ./gradlew :app:compilePreviewKotlin --console=plain --stacktrace > build.log 2>&1
           if [ $? -ne 0 ]; then annotate "Kotlin compile failed" build.log; failed=1; fi
           if [ $failed -eq 0 ]; then
-            ./gradlew :app:testReleaseUnitTest --tests 'eu.kanade.tachiyomi.ui.browse.globalsearch.*' --console=plain > test.log 2>&1
+            ./gradlew :app:testReleaseUnitTest --tests 'eu.kanade.tachiyomi.ui.browse.globalsearch.*' --tests 'eu.kanade.tachiyomi.ui.reader.translate.*' --console=plain > test.log 2>&1
             if [ $? -ne 0 ]; then annotate "Unit tests failed" test.log; failed=1; fi
           fi
           tail -n 3 test.log 2>/dev/null

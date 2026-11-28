@@ -2,28 +2,45 @@ package eu.kanade.presentation.reader.appbars
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Explore
 import androidx.compose.material.icons.outlined.FormatListNumbered
 import androidx.compose.material.icons.outlined.Public
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.Share
+import androidx.compose.material.icons.outlined.Translate
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.dp
 import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.ui.reader.setting.ReaderBottomButton
 import eu.kanade.tachiyomi.ui.reader.setting.ReaderOrientation
 import eu.kanade.tachiyomi.ui.reader.setting.ReadingMode
+import eu.kanade.tachiyomi.ui.reader.translate.PageTranslationService
+import eu.kanade.tachiyomi.ui.reader.translate.TranslationPreferences
+import eu.kanade.tachiyomi.util.system.toast
 import kotlinx.collections.immutable.ImmutableSet
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.kmk.KMR
 import tachiyomi.i18n.sy.SYMR
 import tachiyomi.presentation.core.i18n.stringResource
+import tachiyomi.presentation.core.util.collectAsState
+import uy.kohesive.injekt.Injekt
+import uy.kohesive.injekt.api.get
 
 @Composable
 fun ReaderBottomBar(
@@ -179,6 +196,10 @@ fun ReaderBottomBar(
             }
         }
 
+        // KMK -->
+        TranslateButton(iconColor = iconColor)
+        // KMK <--
+
         IconButton(onClick = onClickSettings) {
             Icon(
                 imageVector = Icons.Outlined.Settings,
@@ -191,3 +212,44 @@ fun ReaderBottomBar(
         // SY <--
     }
 }
+
+// KMK -->
+/** Switches page translation on or off and shows what the engine is doing. */
+@Composable
+private fun TranslateButton(iconColor: Color) {
+    val context = LocalContext.current
+    val preferences = remember { Injekt.get<TranslationPreferences>() }
+    val enabled by preferences.enabled().collectAsState()
+    val status by PageTranslationService.status.collectAsState()
+
+    if (enabled) {
+        val current = status
+        if (current is PageTranslationService.Status.Failed) {
+            val message = stringResource(KMR.strings.page_translation_failed, current.message)
+            LaunchedEffect(current) { context.toast(message) }
+        }
+    }
+
+    IconButton(onClick = { preferences.enabled().set(!enabled) }) {
+        val current = status
+        when {
+            enabled && current is PageTranslationService.Status.Working -> CircularProgressIndicator(
+                modifier = Modifier.size(20.dp),
+                strokeWidth = 2.dp,
+                color = iconColor,
+            )
+            else -> Icon(
+                imageVector = Icons.Outlined.Translate,
+                contentDescription = stringResource(
+                    if (enabled) KMR.strings.action_show_original_page else KMR.strings.action_translate_page,
+                ),
+                tint = when {
+                    !enabled -> MaterialTheme.colorScheme.onSurfaceVariant
+                    current is PageTranslationService.Status.Failed -> MaterialTheme.colorScheme.error
+                    else -> iconColor
+                },
+            )
+        }
+    }
+}
+// KMK <--

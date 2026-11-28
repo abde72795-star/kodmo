@@ -284,4 +284,33 @@
     <string name="source_trust_state_trusted">Trusted</string>
     <string name="source_trust_state_untrusted">Untrusted</string>
     <string name="source_trust_exclude">Exclude from bulk actions</string>
+    <!-- Page translation -->
+    <string name="pref_category_page_translation">Page translation</string>
+    <string name="pref_page_translation_enabled">Translate pages</string>
+    <string name="pref_page_translation_enabled_summary">Recognise the text of each page on this device and draw the translation over it. The original image is never changed</string>
+    <string name="pref_page_translation_ocr">Text recognition (OCR)</string>
+    <string name="pref_page_translation_ocr_summary">Google ML Kit, bundled in the app (Latin, Japanese, Chinese and Korean)</string>
+    <string name="pref_page_translation_source">Source language</string>
+    <string name="pref_page_translation_target">Target language</string>
+    <string name="pref_page_translation_auto">Auto-detect</string>
+    <string name="pref_page_translation_provider">Translation provider</string>
+    <string name="pref_page_translation_api_key">API key</string>
+    <string name="pref_page_translation_api_key_summary">Stored only on this device and excluded from backups</string>
+    <string name="pref_page_translation_base_url">API address</string>
+    <string name="pref_page_translation_model">Model</string>
+    <string name="pref_page_translation_font_scale">Text size</string>
+    <string name="pref_page_translation_text_color">Text colour</string>
+    <string name="page_translation_color_auto">Automatic</string>
+    <string name="page_translation_color_black">Black</string>
+    <string name="page_translation_color_white">White</string>
+    <string name="pref_page_translation_cache_size">Translated pages cache size</string>
+    <string name="pref_page_translation_clear_cache">Clear translated pages cache</string>
+    <string name="pref_page_translation_cache_used">Using %1$s</string>
+    <string name="page_translation_cache_cleared">Translated pages cache cleared</string>
+    <string name="action_translate_page">Translate page</string>
+    <string name="action_show_original_page">Show original</string>
+    <string name="page_translation_working">Translating…</string>
+    <string name="page_translation_done">Translation ready</string>
+    <string name="page_translation_done_cached">Translation ready (from cache)</string>
+    <string name="page_translation_failed">Translation failed: %1$s</string>
 </resources>

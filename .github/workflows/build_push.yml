@@ -2,7 +2,7 @@ name: CI
 on:
   push:
     branches:
-      - exp/multi-source
+      - exp/ai-tools
     paths:
       - '**'
       - '!**.md'
@@ -170,8 +170,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          tag="exp-multi-source-run${GITHUB_RUN_NUMBER}"
+          tag="exp-ai-tools-run${GITHUB_RUN_NUMBER}"
           gh release delete "$tag" --repo "$GITHUB_REPOSITORY" --yes --cleanup-tag || true
           gh release create "$tag" ./*.apk --repo "$GITHUB_REPOSITORY" --prerelease --target "$GITHUB_SHA" \
-            --title "Experimental build: last chapter, global search, sessions" \
+            --title "Experimental build: AI translation, fonts, floating window, chapter gaps" \
             --notes "Built from commit $GITHUB_SHA. Experimental, not tested on a device."

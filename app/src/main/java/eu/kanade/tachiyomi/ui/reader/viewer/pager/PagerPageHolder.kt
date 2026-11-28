@@ -11,6 +11,8 @@ import eu.kanade.tachiyomi.databinding.ReaderErrorBinding
 import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.ui.reader.model.InsertPage
 import eu.kanade.tachiyomi.ui.reader.model.ReaderPage
+import eu.kanade.tachiyomi.ui.reader.translate.PageTranslationService
+import eu.kanade.tachiyomi.ui.reader.translate.TranslationPreferences
 import eu.kanade.tachiyomi.ui.reader.viewer.ReaderPageImageView
 import eu.kanade.tachiyomi.ui.reader.viewer.ReaderProgressIndicator
 import eu.kanade.tachiyomi.ui.webview.WebViewActivity
@@ -19,6 +21,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.supervisorScope
 import logcat.LogPriority
@@ -32,6 +35,7 @@ import tachiyomi.core.common.util.system.ImageUtil
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.decoder.ImageDecoder
 import tachiyomi.i18n.MR
+import uy.kohesive.injekt.injectLazy
 import kotlin.math.max
 
 /**
@@ -66,6 +70,13 @@ class PagerPageHolder(
 
     private val scope = MainScope()
 
+    // KMK -->
+    private val translationPreferences: TranslationPreferences by injectLazy()
+
+    /** Re-renders the page when page translation is switched on or off. */
+    private var translationToggleJob: Job? = null
+    // KMK <--
+
     /**
      * Job for loading the page and processing changes to the page's status.
      */
@@ -81,6 +92,13 @@ class PagerPageHolder(
         // SY -->
         extraLoadJob = scope.launch { loadPageAndProcessStatus(2) }
         // SY <--
+        // KMK -->
+        translationToggleJob = scope.launch {
+            translationPreferences.enabled().changes().drop(1).collect {
+                if (page.status == Page.State.Ready) setImage()
+            }
+        }
+        // KMK <--
     }
 
     /**
@@ -92,6 +110,10 @@ class PagerPageHolder(
         loadJob = null
         extraLoadJob?.cancel()
         extraLoadJob = null
+        // KMK -->
+        translationToggleJob?.cancel()
+        translationToggleJob = null
+        // KMK <--
     }
 
     private fun initProgressIndicator() {
@@ -197,12 +219,19 @@ class PagerPageHolder(
                         }
                         // SY <--
                         val isAnimated = ImageUtil.isAnimatedAndSupported(itemSource)
+                        // KMK -->
+                        val shownSource = if (!isAnimated && translationPreferences.enabled().get()) {
+                            PageTranslationService.translate(itemSource) ?: itemSource
+                        } else {
+                            itemSource
+                        }
+                        // KMK <--
                         val background = if (!isAnimated && viewer.config.automaticBackground) {
-                            ImageUtil.chooseBackground(context, itemSource.peek())
+                            ImageUtil.chooseBackground(context, shownSource.peek())
                         } else {
                             null
                         }
-                        Triple(itemSource, isAnimated, background)
+                        Triple(shownSource, isAnimated, background)
                     }
                 }
             }
