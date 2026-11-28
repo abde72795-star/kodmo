@@ -275,6 +275,13 @@ object SettingsAdvancedScreen : SearchableSettings {
         return Preference.PreferenceGroup(
             title = stringResource(MR.strings.label_network),
             preferenceItems = persistentListOf(
+                // KMK -->
+                Preference.PreferenceItem.SwitchPreference(
+                    preference = networkPreferences.keepSessionCookies(),
+                    title = stringResource(KMR.strings.pref_keep_session_cookies),
+                    subtitle = stringResource(KMR.strings.pref_keep_session_cookies_summary),
+                ),
+                // KMK <--
                 Preference.PreferenceItem.TextPreference(
                     title = stringResource(MR.strings.pref_clear_cookies),
                     onClick = {

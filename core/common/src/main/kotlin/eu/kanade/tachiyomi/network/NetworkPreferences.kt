@@ -15,6 +15,13 @@ class NetworkPreferences(
         return preferenceStore.getInt("doh_provider", -1)
     }
 
+    // KMK -->
+    /** Keep login sessions of sources (cookies without expiry) for 30 days instead of until the app is closed. */
+    fun keepSessionCookies(): Preference<Boolean> {
+        return preferenceStore.getBoolean("pref_keep_session_cookies", true)
+    }
+    // KMK <--
+
     fun defaultUserAgent(): Preference<String> {
         return preferenceStore.getString(
             "default_user_agent",

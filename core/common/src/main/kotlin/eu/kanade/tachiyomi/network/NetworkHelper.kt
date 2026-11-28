@@ -25,7 +25,11 @@ import kotlin.random.Random
     private val preferences: NetworkPreferences,
 ) {
 
-    /* SY --> */ open /* SY <-- */val cookieJar = AndroidCookieJar()
+    /* SY --> */ open /* SY <-- */val cookieJar = AndroidCookieJar(
+        // KMK -->
+        keepSessionCookies = { preferences.keepSessionCookies().get() },
+        // KMK <--
+    )
 
     /**
      * Timeout in unit of seconds.

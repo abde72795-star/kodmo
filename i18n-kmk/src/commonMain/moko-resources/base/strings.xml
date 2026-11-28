@@ -242,4 +242,9 @@
     <string name="pref_discord_show_download_button_summary">Displays a button to download the app</string>
     <string name="pref_discord_show_discord_button">Show Discord Button</string>
     <string name="pref_discord_show_discord_button_summary">Displays a button to join the Discord server</string>
+
+    <!-- Sessions -->
+    <string name="pref_keep_session_cookies">Keep source login sessions</string>
+    <string name="pref_keep_session_cookies_summary">Keep cookies that have no expiry date for 30 days, so logins and verified sessions survive closing the app. Cookies are never deleted automatically</string>
 </resources>
+

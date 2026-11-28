@@ -315,6 +315,10 @@ class App : Application(), DefaultLifecycleObserver, SingletonImageLoader.Factor
     }
 
     override fun onStop(owner: LifecycleOwner) {
+        // KMK -->
+        // Persist cookies and login sessions before the system may kill the app in the background
+        runCatching { Injekt.get<NetworkHelper>().cookieJar.flush() }
+        // KMK <--
         SecureActivityDelegate.onApplicationStopped()
 
         // AM (DISCORD) -->
