@@ -199,7 +199,20 @@ class ExtensionManager(
         val extensions: List<Extension.Available> = try {
             api.findExtensions()
                 // KMK -->
-                .also { warnAboutChangedStores(it.changedStores) }
+                .also {
+                    warnAboutChangedStores(it.changedStores)
+                    if (it.failedStores.isNotEmpty()) {
+                        withUIContext {
+                            context.toast(
+                                context.stringResource(
+                                    KMR.strings.extension_store_failed,
+                                    it.failedStores.joinToString("\n"),
+                                ),
+                                Toast.LENGTH_LONG,
+                            )
+                        }
+                    }
+                }
                 .extensions
             // KMK <--
         } catch (e: Exception) {

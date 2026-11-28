@@ -265,6 +265,7 @@
     <string name="kmk_sources_count">%1$d sources</string>
 
     <!-- Source trust -->
+    <string name="extension_store_failed">Could not load extension repository:\n%1$s</string>
     <string name="source_trust_title">Source trust</string>
     <string name="source_trust_summary">Choose which sources the app may use for search and checks</string>
     <string name="source_trust_note">Trusted sources may be used for global search, latest-chapter checks and chapter counts. This does not change extension security checks. The lock button protects a source from bulk actions.</string>

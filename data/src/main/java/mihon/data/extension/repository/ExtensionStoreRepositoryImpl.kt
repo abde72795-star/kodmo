@@ -133,13 +133,14 @@ class ExtensionStoreRepositoryImpl(
         return try {
             supervisorScope {
                 // KMK -->
-                val results = handler.awaitList {
+                val stores = handler.awaitList {
                     // KMK <--
                     extension_storeQueries.getAll(::extensionStoreMapper)
                 }
                     // KMK -->
                     .filterNot { it.indexUrl in disabledRepos }
-                    // KMK <--
+                // KMK <--
+                val results = stores
                     .map { store ->
                         async {
                             service.getExtensions(store).onFailure {
@@ -155,6 +156,14 @@ class ExtensionStoreRepositoryImpl(
                     extensions = results.flatMap { it.getOrDefault(emptyList()) },
                     changedStores = results.mapNotNull {
                         (it.exceptionOrNull() as? ExtensionStoreChangedException)?.changed
+                    },
+                    failedStores = results.mapIndexedNotNull { index, result ->
+                        val error = result.exceptionOrNull()
+                        if (error == null || error is ExtensionStoreChangedException) {
+                            null
+                        } else {
+                            "${stores[index].name}: ${error.message ?: error::class.simpleName}"
+                        }
                     },
                 )
                 // KMK <--

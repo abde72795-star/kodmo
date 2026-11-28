@@ -39,4 +39,8 @@ data class ExtensionStoresRefresh(
 data class FetchedExtensions(
     val extensions: List<Extension.Available> = emptyList(),
     val changedStores: List<ChangedExtensionStore> = emptyList(),
+    // KMK -->
+    /** Stores that could not be fetched, as `store name: error`. They used to fail silently. */
+    val failedStores: List<String> = emptyList(),
+    // KMK <--
 )
