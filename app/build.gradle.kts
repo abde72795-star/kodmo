@@ -76,7 +76,10 @@ android {
         create("preview") {
             initWith(release)
 
-            applicationIdSuffix = ".beta"
+            // KMK -->
+            // Separate application id so this experimental build installs next to the official Komikku
+            applicationIdSuffix = ".multisource"
+            // KMK <--
 
             versionNameSuffix = debug.versionNameSuffix
             signingConfig = debug.signingConfig

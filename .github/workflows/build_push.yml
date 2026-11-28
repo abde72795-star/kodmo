@@ -71,7 +71,7 @@ jobs:
           TELEMETRY_ENABLED: ${{ steps.google_services.outputs.telemetry_enabled }}
         run: |
           set -euo pipefail
-          gradle_args=(-Penable-updater)
+          gradle_args=()
           if [ "$TELEMETRY_ENABLED" = "true" ]; then
             gradle_args+=(-Pinclude-telemetry)
           fi
