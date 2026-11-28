@@ -76,6 +76,11 @@ class GlobalSearchScreen(
                 }
             }
         } else {
+            // KMK -->
+            androidx.compose.runtime.LaunchedEffect(state.progress, state.grouped) {
+                screenModel.fetchLastChapters()
+            }
+            // KMK <--
             GlobalSearchScreen(
                 state = state,
                 navigateUp = navigator::pop,
@@ -108,6 +113,9 @@ class GlobalSearchScreen(
                 // KMK -->
                 bulkFavoriteScreenModel = bulkFavoriteScreenModel,
                 hasPinnedSources = screenModel.hasPinnedSources(),
+                onToggleGrouped = screenModel::toggleGrouped,
+                onGroupSortChange = screenModel::setGroupSort,
+                onRefreshChapters = { screenModel.fetchLastChapters(force = true) },
                 // KMK <--
             )
         }

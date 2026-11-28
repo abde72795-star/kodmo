@@ -246,5 +246,16 @@
     <!-- Sessions -->
     <string name="pref_keep_session_cookies">Keep source login sessions</string>
     <string name="pref_keep_session_cookies_summary">Keep cookies that have no expiry date for 30 days, so logins and verified sessions survive closing the app. Cookies are never deleted automatically</string>
-</resources>
 
+    <!-- Grouped global search / latest chapter -->
+    <string name="kmk_group_results">Group identical titles</string>
+    <string name="kmk_sort_title">Title</string>
+    <string name="kmk_sort_latest_chapter">Latest chapter</string>
+    <string name="kmk_refresh_chapters">Refresh latest chapters</string>
+    <string name="kmk_latest_chapter">Ch. %1$s</string>
+    <string name="kmk_latest_chapter_unknown">Latest chapter unknown</string>
+    <string name="kmk_latest_chapter_loading">Checking…</string>
+    <string name="kmk_latest_chapter_stale">%1$s (outdated)</string>
+    <string name="kmk_chapters_updated_at">Chapters updated %1$s</string>
+    <string name="kmk_sources_count">%1$d sources</string>
+</resources>

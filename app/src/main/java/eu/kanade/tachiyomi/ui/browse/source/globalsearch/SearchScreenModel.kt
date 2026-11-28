@@ -9,6 +9,9 @@ import eu.kanade.domain.source.service.SourcePreferences
 import eu.kanade.presentation.util.ioCoroutineScope
 import eu.kanade.tachiyomi.extension.ExtensionManager
 import eu.kanade.tachiyomi.source.Source
+import eu.kanade.tachiyomi.ui.browse.source.globalsearch.group.GroupSort
+import eu.kanade.tachiyomi.ui.browse.source.globalsearch.group.LastChapterTracker
+import eu.kanade.tachiyomi.ui.browse.source.globalsearch.group.SearchGrouping
 import kotlinx.collections.immutable.PersistentMap
 import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.toImmutableMap
@@ -80,8 +83,48 @@ abstract class SearchScreenModel(
                 mutableState.update { it.copy(sourceFilter = state) }
             }
         }
+        screenModelScope.launch {
+            preferences.globalSearchGrouped().changes().collectLatest { grouped ->
+                mutableState.update { it.copy(grouped = grouped) }
+            }
+        }
+        screenModelScope.launch {
+            preferences.globalSearchGroupSort().changes().collectLatest { sort ->
+                mutableState.update { it.copy(groupSort = sort) }
+            }
+        }
         // KMK <--
     }
+
+    // KMK -->
+    private val requestedChapterKeys = HashSet<String>()
+    private val chapterScope get() = ioCoroutineScope
+
+    fun toggleGrouped() {
+        preferences.globalSearchGrouped().toggle()
+    }
+
+    fun setGroupSort(sort: GroupSort) {
+        preferences.globalSearchGroupSort().set(sort)
+    }
+
+    /** Fetches the latest chapter of every grouped entry, a few at a time. Failing sources are skipped. */
+    fun fetchLastChapters(force: Boolean = false) {
+        if (!state.value.grouped) return
+        val groups = SearchGrouping.group(state.value.items)
+        for (entry in groups.flatMap { it.entries }) {
+            val key = LastChapterTracker.key(entry.source.id, entry.manga.url)
+            if (force) {
+                requestedChapterKeys.add(key)
+            } else if (!requestedChapterKeys.add(key)) {
+                continue
+            }
+            chapterScope.launch {
+                LastChapterTracker.refresh(entry.source, entry.manga, force)
+            }
+        }
+    }
+    // KMK <--
 
     @Composable
     fun getManga(initialManga: Manga): androidx.compose.runtime.State<Manga> {
@@ -158,6 +201,9 @@ abstract class SearchScreenModel(
         this.lastSourceFilter = sourceFilter
 
         searchJob?.cancel()
+        // KMK -->
+        if (!sameQuery) requestedChapterKeys.clear()
+        // KMK <--
 
         val sources = getSelectedSources()
 
@@ -248,6 +294,10 @@ abstract class SearchScreenModel(
         val onlyShowHasResults: Boolean = false,
         val items: PersistentMap<Source, SearchItemResult> = persistentMapOf(),
         val dialog: Dialog? = null,
+        // KMK -->
+        val grouped: Boolean = true,
+        val groupSort: GroupSort = GroupSort.Title,
+        // KMK <--
     ) {
         val progress: Int = items.count { it.value !is SearchItemResult.Loading }
         val total: Int = items.size

@@ -2,6 +2,7 @@ package eu.kanade.domain.source.service
 
 import eu.kanade.domain.source.interactor.SetMigrateSorting
 import eu.kanade.tachiyomi.ui.browse.source.globalsearch.SourceFilter
+import eu.kanade.tachiyomi.ui.browse.source.globalsearch.group.GroupSort
 import eu.kanade.tachiyomi.util.system.LocaleHelper
 import mihon.domain.migration.models.MigrationFlag
 import tachiyomi.core.common.preference.Preference
@@ -95,6 +96,10 @@ class SourcePreferences(
     )
 
     fun disabledRepos() = preferenceStore.getStringSet("disabled_repos", emptySet())
+
+    fun globalSearchGrouped() = preferenceStore.getBoolean("global_search_grouped", true)
+
+    fun globalSearchGroupSort() = preferenceStore.getEnum("global_search_group_sort", GroupSort.Title)
     // KMK <--
 
     // SY -->
