@@ -1,0 +1,62 @@
+name: Compile check
+on:
+  push:
+    branches:
+      - exp/multi-source
+    paths:
+      - 'app/**'
+      - 'i18n-kmk/**'
+      - 'domain/**'
+      - 'data/**'
+      - '.github/workflows/compile_check.yml'
+      - 'source-api/**'
+      - 'core/**'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  compile:
+    name: Compile and report errors as annotations
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Clone repo
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up JDK
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+        with:
+          java-version-file: .github/.java-version
+          distribution: temurin
+
+      - name: Set up gradle
+        uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6
+
+      - name: Format, compile and unit tests
+        run: |
+          set +e
+          annotate() {
+            # $1 = title, $2 = log file
+            {
+              grep -E '^e: |error:|FAILED|What went wrong|Execution failed|Violations|^\s+\+|^\s+-|\.kt' "$2" | head -n 70
+              grep -A8 'What went wrong' "$2" | head -n 14
+            } | sed 's#file://##; s#/home/runner/work/[^/]*/[^/]*/##' > errors.txt
+            msg="$(sed ':a;N;$!ba;s/%/%25/g;s/\r/%0D/g;s/\n/%0A/g' errors.txt | cut -c1-6000)"
+            echo "::error title=$1::${msg}"
+          }
+          failed=0
+          ./gradlew spotlessCheck --console=plain > spotless.log 2>&1
+          if [ $? -ne 0 ]; then annotate "spotlessCheck failed" spotless.log; failed=1; fi
+          ./gradlew :app:compilePreviewKotlin --console=plain --stacktrace > build.log 2>&1
+          if [ $? -ne 0 ]; then annotate "Kotlin compile failed" build.log; failed=1; fi
+          if [ $failed -eq 0 ]; then
+            ./gradlew :app:testReleaseUnitTest --tests 'eu.kanade.tachiyomi.ui.reader.translate.*' --console=plain > test.log 2>&1
+            if [ $? -ne 0 ]; then annotate "Translation unit tests failed" test.log; failed=1; fi
+          fi
+          tail -n 3 test.log 2>/dev/null
+          exit $failed

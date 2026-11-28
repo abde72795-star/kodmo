@@ -2,8 +2,7 @@ name: CI
 on:
   push:
     branches:
-      # - develop
-      - master
+      - exp/multi-source
     paths:
       - '**'
       - '!**.md'
@@ -18,12 +17,17 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build:
     name: Build app
     runs-on: 'ubuntu-24.04'
+    env:
+      SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
+      SIGNING_ALIAS: ${{ secrets.ALIAS }}
+      SIGNING_STORE_PASSWORD: ${{ secrets.KEY_STORE_PASSWORD }}
+      SIGNING_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
 
     steps:
       - name: Clone repo
@@ -37,28 +41,41 @@ jobs:
           java-version-file: .github/.java-version
           distribution: temurin
 
-      - name: Write google-services.json
-        uses: DamianReeves/write-file-action@6929a9a6d1807689191dcc8bbe62b54d70a32b42 # v1.3
-        with:
-          path: app/google-services.json
-          contents: ${{ secrets.GOOGLE_SERVICES_JSON }}
-          write-mode: overwrite
-
-      - name: Write client_secrets.json
-        uses: DamianReeves/write-file-action@6929a9a6d1807689191dcc8bbe62b54d70a32b42 # v1.3
-        with:
-          path: app/src/main/assets/client_secrets.json
-          contents: ${{ secrets.GOOGLE_CLIENT_SECRETS_JSON }}
-          write-mode: overwrite
+      - name: Configure optional Google services
+        id: google_services
+        env:
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+          GOOGLE_CLIENT_SECRETS_JSON: ${{ secrets.GOOGLE_CLIENT_SECRETS_JSON }}
+        run: |
+          set -euo pipefail
+          if [ -n "${GOOGLE_SERVICES_JSON:-}" ]; then
+            printf '%s' "$GOOGLE_SERVICES_JSON" > app/google-services.json
+            echo "telemetry_enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Google services secret is not configured; building without optional telemetry."
+            echo "telemetry_enabled=false" >> "$GITHUB_OUTPUT"
+          fi
+          if [ -n "${GOOGLE_CLIENT_SECRETS_JSON:-}" ]; then
+            mkdir -p app/src/main/assets
+            printf '%s' "$GOOGLE_CLIENT_SECRETS_JSON" > app/src/main/assets/client_secrets.json
+          fi
 
       - name: Set up gradle
-        uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6
+        uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6
 
       - name: Check code format
         run: ./gradlew spotlessCheck
 
       - name: Build app
-        run: ./gradlew assemblePreview -Pinclude-telemetry -Penable-updater
+        env:
+          TELEMETRY_ENABLED: ${{ steps.google_services.outputs.telemetry_enabled }}
+        run: |
+          set -euo pipefail
+          gradle_args=(-Penable-updater)
+          if [ "$TELEMETRY_ENABLED" = "true" ]; then
+            gradle_args+=(-Pinclude-telemetry)
+          fi
+          ./gradlew assemblePreview "${gradle_args[@]}"
 
       - name: Run unit tests
         id: unit_tests
@@ -69,42 +86,92 @@ jobs:
 
       - name: Upload test report
         if: steps.unit_tests.outcome == 'failure'
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: test-report-${{ github.sha }}
           path: app/build/reports/tests/testReleaseUnitTest
 
-      - name: Sign APK
+      # The preview build type already uses Gradle's debug signing config.
+      # Apply the private release-style key only when all repository secrets exist.
+      - name: Sign APK with repository key
+        if: ${{ env.SIGNING_KEY != '' && env.SIGNING_ALIAS != '' && env.SIGNING_STORE_PASSWORD != '' && env.SIGNING_KEY_PASSWORD != '' }}
         uses: r0adkll/sign-android-release@f30bdd30588842ac76044ecdbd4b6d0e3e813478
         with:
           releaseDirectory: app/build/outputs/apk/preview
-          signingKeyBase64: ${{ secrets.SIGNING_KEY }}
-          alias: ${{ secrets.ALIAS }}
-          keyStorePassword: ${{ secrets.KEY_STORE_PASSWORD }}
-          keyPassword: ${{ secrets.KEY_PASSWORD }}
+          signingKeyBase64: ${{ env.SIGNING_KEY }}
+          alias: ${{ env.SIGNING_ALIAS }}
+          keyStorePassword: ${{ env.SIGNING_STORE_PASSWORD }}
+          keyPassword: ${{ env.SIGNING_KEY_PASSWORD }}
         env:
           BUILD_TOOLS_VERSION: '35.0.1'
 
-      - name: Rename apk
+      - name: Add Android build-tools to PATH
+        run: |
+          set -euo pipefail
+          sdk_root="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
+          apksigner_path="$(find "$sdk_root/build-tools" -type f -name apksigner -print -quit 2>/dev/null || true)"
+          if [ -z "$apksigner_path" ]; then
+            sdkmanager_path="$(command -v sdkmanager || true)"
+            if [ -z "$sdkmanager_path" ] && [ -x "$sdk_root/cmdline-tools/latest/bin/sdkmanager" ]; then
+              sdkmanager_path="$sdk_root/cmdline-tools/latest/bin/sdkmanager"
+            fi
+            if [ -n "$sdkmanager_path" ]; then
+              yes | "$sdkmanager_path" --licenses >/dev/null || true
+              "$sdkmanager_path" "build-tools;35.0.1"
+              apksigner_path="$(find "$sdk_root/build-tools" -type f -name apksigner -print -quit 2>/dev/null || true)"
+            fi
+          fi
+          if [ -z "$apksigner_path" ]; then
+            echo "::error::Android build-tools apksigner could not be located or installed."
+            exit 1
+          fi
+          echo "$(dirname "$apksigner_path")" >> "$GITHUB_PATH"
+          echo "Using Android APK signer: $apksigner_path"
+
+      - name: Verify and rename APK
         id: current_commit
         run: |
-          set -e
-          version_tag=$(echo ${GITHUB_REF/refs\/heads\//} | sed -r 's/^refs\/(heads|tags)\///' | sed -r 's/[-\/]+/_/g')
+          set -euo pipefail
+          apk_dir="app/build/outputs/apk/preview"
+          signed_apk="$apk_dir/app-arm64-v8a-preview-signed.apk"
+          gradle_apk="$apk_dir/app-arm64-v8a-preview.apk"
+          if [ -f "$signed_apk" ]; then
+            apk_path="$signed_apk"
+            echo "Using APK signed with the repository's configured signing key."
+          elif [ -f "$gradle_apk" ]; then
+            apk_path="$gradle_apk"
+            echo "::warning::Signing secrets are incomplete. Using the preview APK signed by Gradle's debug key. This fallback is installable, but its signing identity may change between GitHub runners, so it is not suitable for seamless app updates."
+          else
+            echo "::error::No arm64-v8a preview APK was produced."
+            ls -lah "$apk_dir"
+            exit 1
+          fi
+
+          apksigner verify --verbose "$apk_path"
+          version_tag=$(echo "${GITHUB_REF#refs/heads/}" | sed -E 's/^refs\/(heads|tags)\///' | sed -E 's/[-\/]+/_/g')
           commit_count=$(git rev-list --count HEAD)
-          echo "VERSION_TAG=$version_tag"
-          echo "VERSION_TAG=$version_tag" >> $GITHUB_OUTPUT
-          echo "COMMIT_COUNT=$commit_count"
-          echo "COMMIT_COUNT=$commit_count" >> $GITHUB_OUTPUT
-          mv app/build/outputs/apk/preview/app-universal-preview-signed.apk Komikku-$version_tag-r$commit_count.apk
+          echo "VERSION_TAG=$version_tag" >> "$GITHUB_OUTPUT"
+          echo "COMMIT_COUNT=$commit_count" >> "$GITHUB_OUTPUT"
+          mv "$apk_path" "Kodomo-arm64-v8a-$version_tag-r$commit_count.apk"
 
       - name: Upload APK
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: Komikku-${{ steps.current_commit.outputs.VERSION_TAG }}-r${{ steps.current_commit.outputs.COMMIT_COUNT }}.apk
+          name: Kodomo-${{ steps.current_commit.outputs.VERSION_TAG }}-r${{ steps.current_commit.outputs.COMMIT_COUNT }}.apk
           path: ./*.apk
 
       - name: Upload mapping
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: mapping-${{ github.sha }}
           path: app/build/outputs/mapping/preview
+
+      - name: Publish APK as a release for this branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="exp-multi-source"
+          gh release delete "$tag" --repo "$GITHUB_REPOSITORY" --yes --cleanup-tag || true
+          gh release create "$tag" ./*.apk --repo "$GITHUB_REPOSITORY" --prerelease --target "$GITHUB_SHA" \
+            --title "Experimental build: last chapter, global search, sessions" \
+            --notes "Built from commit $GITHUB_SHA. Experimental, not tested on a device."
